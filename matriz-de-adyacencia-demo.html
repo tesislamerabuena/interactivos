@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matriz de Adyacencia — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .switch-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    background:var(--line);
+    border-radius:999px;
+    transition:background .2s ease;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:3px;left:3px;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 2px rgba(22,35,63,.25);
+    transition:transform .2s ease;
+  }
+  input[type=checkbox]{display:none;}
+  input[type=checkbox]:checked + .switch{background:var(--teal);}
+  input[type=checkbox]:checked + .switch::after{transform:translateX(20px);}
+
+  button.reset{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:stroke .15s ease, stroke-width .15s ease;
+    fill:none;
+  }
+  .edge:hover, .edge.active{stroke:var(--teal);stroke-width:4;}
+
+  table.matrix{
+    border-collapse:collapse;
+    width:100%;
+    font-family:'JetBrains Mono',monospace;
+  }
+  table.matrix th, table.matrix td{
+    width:38px;height:38px;
+    text-align:center;
+    font-size:14px;
+    border:1px solid var(--line);
+  }
+  table.matrix th{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    color:var(--ink-soft);
+    background:#FAFBFE;
+  }
+  table.matrix th.corner{background:transparent;border:none;}
+  table.matrix td{
+    color:var(--ink-soft);
+    font-weight:500;
+    cursor:default;
+    transition:background .15s ease, color .15s ease;
+  }
+  table.matrix td.one{color:var(--ink);font-weight:600;}
+  table.matrix td.diag{background:#F3F5FA;}
+  table.matrix td.active{background:var(--teal-soft);color:var(--teal);}
+  table.matrix td.flash{animation:flashPulse 900ms ease-out;}
+  @keyframes flashPulse{
+    0%{background-color:#FFE066;box-shadow:inset 0 0 0 2px #F5C518;}
+    100%{background-color:transparent;box-shadow:inset 0 0 0 0 transparent;}
+  }
+
+  .readout{
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+    min-height:40px;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Matriz de adyacencia</h1>
+  <p class="lede">Una matriz de adyacencia representa las conexiones de un grafo en una tabla de números. Construye conexiones en el grafo de la izquierda y observa cómo se actualiza la matriz en tiempo real.</p>
+
+  <div class="toolbar">
+    <label class="switch-label">
+      <input type="checkbox" id="directedToggle">
+      <span class="switch"></span>
+      Grafo dirigido
+    </label>
+    <button class="reset" id="resetBtn">Reiniciar conexiones</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Grafo</h2>
+      <p class="hint">Haz clic en un nodo y luego en otro para crear o quitar una conexión.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#0EA5A4"></path>
+          </marker>
+        </defs>
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Matriz de adyacencia</h2>
+      <p class="hint">Cada celda [fila, columna] indica si existe conexión entre esos dos nodos.</p>
+      <table class="matrix" id="matrixTable"></table>
+      <div class="readout" id="readout">Aún no hay conexiones. Crea una en el grafo para ver cómo se refleja aquí.</div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerla:</b> si el nodo <code>A</code> se conecta con <code>C</code>, la celda fila A · columna C vale <code>1</code>. En un grafo <b>no dirigido</b>, la conexión va en ambos sentidos, así que la celda C · A también vale 1 — la matriz queda simétrica. En un grafo <b>dirigido</b>, la conexión tiene un origen y un destino: solo se marca la celda fila-origen · columna-destino, y la matriz deja de ser simétrica.
+  </div>
+</div>
+
+<script>
+const nodes = ['A','B','C','D','E'];
+const cx = 240, cy = 210, r = 150;
+const positions = {};
+nodes.forEach((n,i) => {
+  const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+  positions[n] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+});
+
+let edges = new Set(); // stores "A>B" always ordered by creation direction
+let directed = false;
+let selected = null;
+let prevValues = {}; // key "r,c" -> last rendered value, used to detect changes to flash
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const matrixTable = document.getElementById('matrixTable');
+const readout = document.getElementById('readout');
+const directedToggle = document.getElementById('directedToggle');
+const resetBtn = document.getElementById('resetBtn');
+
+function edgeKey(a,b){ return a+'>'+b; }
+
+function hasConnection(a,b){
+  if (edges.has(edgeKey(a,b))) return true;
+  if (!directed && edges.has(edgeKey(b,a))) return true;
+  return false;
+}
+
+function toggleEdge(a,b){
+  if (a === b) return;
+  if (directed){
+    const k = edgeKey(a,b);
+    if (edges.has(k)) edges.delete(k); else edges.add(k);
+  } else {
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,a);
+    if (edges.has(k1) || edges.has(k2)){
+      edges.delete(k1); edges.delete(k2);
+    } else {
+      edges.add(k1);
+    }
+  }
+}
+
+function renderNodes(){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(n => {
+    const p = positions[n];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 26);
+    c.setAttribute('class', 'node-circle' + (selected === n ? ' selected' : ''));
+    c.addEventListener('click', () => onNodeClick(n));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y);
+    t.setAttribute('class','node-label');
+    t.textContent = n;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 30;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  const drawn = new Set();
+  edges.forEach(k => {
+    const [a,b] = k.split('>');
+    const undirectedKey = [a,b].sort().join('-');
+    if (!directed && drawn.has(undirectedKey)) return;
+    drawn.add(undirectedKey);
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    line.dataset.pair = [a,b].join(',');
+    if (directed) line.setAttribute('marker-end','url(#arrowhead)');
+    line.addEventListener('mouseenter', () => highlightPair(a,b,true));
+    line.addEventListener('mouseleave', () => highlightPair(a,b,false));
+    edgesLayer.appendChild(line);
+  });
+}
+
+function highlightPair(a,b,on){
+  document.querySelectorAll(`td[data-cell]`).forEach(td => {
+    const [r,c] = td.dataset.cell.split(',');
+    const match = directed ? (r===a && c===b) : ((r===a&&c===b)||(r===b&&c===a));
+    if (match) td.classList.toggle('active', on);
+  });
+}
+
+function renderMatrix(){
+  let html = '<tr><th class="corner"></th>' + nodes.map(n=>`<th>${n}</th>`).join('') + '</tr>';
+  const changedCells = [];
+  nodes.forEach(r => {
+    html += `<tr><th>${r}</th>`;
+    nodes.forEach(c => {
+      const val = r===c ? 0 : (hasConnection(r,c) ? 1 : 0);
+      const key = r+','+c;
+      if (prevValues[key] !== undefined && prevValues[key] !== val) changedCells.push(key);
+      prevValues[key] = val;
+      const cls = ['', r===c ? 'diag' : '', val ? 'one' : ''].join(' ').trim();
+      html += `<td class="${cls}" data-cell="${key}" onmouseenter="hoverCell('${r}','${c}',true)" onmouseleave="hoverCell('${r}','${c}',false)">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  matrixTable.innerHTML = html;
+  changedCells.forEach(key => {
+    const td = matrixTable.querySelector(`td[data-cell="${key}"]`);
+    if (td){
+      td.classList.add('flash');
+      td.addEventListener('animationend', () => td.classList.remove('flash'), { once:true });
+    }
+  });
+}
+
+function hoverCell(r,c,on){
+  document.querySelectorAll('.edge').forEach(edge => {
+    const [a,b] = edge.dataset.pair.split(',');
+    const match = directed ? (a===r&&b===c) : ((a===r&&b===c)||(a===c&&b===r));
+    if (match) edge.classList.toggle('active', on);
+  });
+}
+
+function updateReadout(){
+  const count = directed ? edges.size : new Set([...edges].map(k=>k.split('>').sort().join('-'))).size;
+  if (count === 0){
+    readout.innerHTML = 'Aún no hay conexiones. Crea una en el grafo para ver cómo se refleja aquí.';
+    return;
+  }
+  const degrees = nodes.map(n => {
+    let d = 0;
+    nodes.forEach(m => { if (hasConnection(n,m)) d++; });
+    return `<b>${n}</b>: ${d}`;
+  }).join(' · ');
+  readout.innerHTML = `<b>${count}</b> conexión${count===1?'':'es'} en el grafo ${directed?'(dirigido)':'(no dirigido)'}.<br>Grado de cada nodo — ${degrees}`;
+}
+
+function onNodeClick(n){
+  if (selected === null){
+    selected = n;
+  } else if (selected === n){
+    selected = null;
+  } else {
+    toggleEdge(selected, n);
+    selected = null;
+  }
+  renderAll();
+}
+
+function renderAll(){
+  renderNodes();
+  renderEdges();
+  renderMatrix();
+  updateReadout();
+}
+
+directedToggle.addEventListener('change', (e) => {
+  directed = e.target.checked;
+  renderAll();
+});
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
