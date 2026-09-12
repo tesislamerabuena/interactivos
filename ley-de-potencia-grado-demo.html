@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ley de potencia en la distribución de grado — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,4vw,38px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:700px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper .lbl{color:var(--ink-soft);font-size:13px;}
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:44px;
+    text-align:center;
+  }
+
+  button.reset, button.primary{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset{
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+  button.primary{
+    color:#fff;
+    background:var(--teal);
+    border:1px solid var(--teal);
+  }
+  button.primary:hover{background:#0c8f8e;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:800px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#chart{width:100%;height:auto;display:block;overflow:visible;}
+  .grid-line{stroke:#EEF1F8;stroke-width:1;}
+  .axis-line{stroke:var(--ink-soft);stroke-width:1.2;}
+  .tick-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    fill:var(--ink-soft);
+  }
+  .axis-title{
+    font-family:'Sora',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    fill:var(--ink-soft);
+  }
+  .pt-ba{fill:var(--teal);}
+  .pt-er{fill:var(--amber);}
+  .fit-line{stroke:var(--ink-soft);stroke-width:1.6;stroke-dasharray:5,4;}
+
+  .legend-row{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .legend-row .dot{
+    display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;
+  }
+  .legend-row .dot.ba{background:var(--teal);}
+  .legend-row .dot.er{background:var(--amber);}
+  .legend-row .dot.fit{background:var(--ink-soft);}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 8px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .hub-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:16px;
+  }
+  .hub-row{
+    display:grid;
+    grid-template-columns:70px 1fr 50px;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .hub-row .node-tag{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    color:var(--ink);
+    font-size:12.5px;
+  }
+  .hub-bar-track{height:8px;border-radius:999px;background:#F0F2F8;overflow:hidden;}
+  .hub-bar-fill{height:100%;border-radius:999px;background:var(--teal);transition:width .3s ease;}
+  .hub-row .deg-val{text-align:right;color:var(--ink);font-weight:600;}
+
+  .readout{
+    margin-top:6px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Ley de potencia en la distribución de grado</h1>
+  <p class="lede">En una red libre de escala, unos pocos nodos ("hubs") concentran muchísimas conexiones mientras la inmensa mayoría tiene pocas — y P(k) sigue una ley de potencia, k<sup>−γ</sup>, que se ve como una línea recta en una gráfica log-log. Genera una red con conexión preferencial (Barabási–Albert) y compárala contra una red aleatoria del mismo tamaño.</p>
+
+  <div class="toolbar">
+    <div class="stepper">
+      <span class="lbl">Nodos (N)</span>
+      <button id="nMinus">−</button>
+      <span class="n-value" id="nValue">150</span>
+      <button id="nPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Enlaces por nodo nuevo (m)</span>
+      <button id="mMinus">−</button>
+      <span class="n-value" id="mValue">2</span>
+      <button id="mPlus">+</button>
+    </div>
+    <button class="primary" id="generateBtn">Generar y comparar</button>
+    <button class="reset" id="resetBtn">Reiniciar</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>P(k) en escala log-log</h2>
+      <p class="hint">Cada punto es un valor de grado k observado. Una línea recta en esta escala es la firma de una ley de potencia.</p>
+      <svg id="chart" viewBox="0 0 460 340"></svg>
+      <div class="legend-row">
+        <span><span class="dot ba"></span>Libre de escala (Barabási–Albert)</span>
+        <span><span class="dot er"></span>Aleatoria (Erdős–Rényi), mismo N y ⟨k⟩</span>
+        <span><span class="dot fit"></span>Ajuste de la ley de potencia</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Resumen</h2>
+      <p class="hint">Grado máximo, exponente ajustado, y los nodos más conectados de la red libre de escala.</p>
+
+      <div class="stats-row">
+        <div class="stat" id="statMax">
+          <div class="num" id="statMaxNum">—</div>
+          <div class="lbl">Grado máximo (BA)</div>
+        </div>
+        <div class="stat" id="statGamma">
+          <div class="num" id="statGammaNum">—</div>
+          <div class="lbl">Exponente γ ajustado</div>
+        </div>
+      </div>
+
+      <p class="hint" style="margin-bottom:6px;">Los 5 nodos más conectados (hubs):</p>
+      <div class="hub-list" id="hubList"></div>
+
+      <div class="readout" id="readout">Genera una red para ver los resultados.</div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> el modelo de Barabási–Albert construye la red nodo por nodo: cada nodo nuevo se conecta a <code>m</code> nodos ya existentes, elegidos con probabilidad proporcional a su grado actual — "conexión preferencial", donde los ricos se hacen más ricos. Con el tiempo esto produce hubs con grado mucho mayor que el promedio. En cambio, una red aleatoria con la misma N y el mismo grado promedio produce una distribución donde casi todos los nodos tienen un grado parecido, cayendo rápidamente (aproximadamente Poisson) — por eso, en la gráfica log-log, sus puntos se desploman en vez de seguir una recta. El exponente γ, obtenido ajustando una recta a log P(k) contra log k, suele caer entre 2 y 3 para redes libres de escala reales (webs, redes sociales, biológicas).
+  </div>
+</div>
+
+<script>
+const N_MIN = 50, N_MAX = 300, N_STEP = 25;
+const M_MIN = 1, M_MAX = 5;
+let N = 150;
+let m = 2;
+
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const mMinus = document.getElementById('mMinus');
+const mPlus = document.getElementById('mPlus');
+const mValue = document.getElementById('mValue');
+const generateBtn = document.getElementById('generateBtn');
+const resetBtn = document.getElementById('resetBtn');
+const hubList = document.getElementById('hubList');
+const readout = document.getElementById('readout');
+const chartSvg = document.getElementById('chart');
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const PLOT = { left: 46, right: 14, top: 14, bottom: 34, width: 460, height: 340 };
+
+function updateControls(){
+  nValue.textContent = N;
+  nMinus.disabled = N<=N_MIN;
+  nPlus.disabled = N>=N_MAX;
+  mValue.textContent = m;
+  mMinus.disabled = m<=M_MIN;
+  mPlus.disabled = m>=M_MAX;
+}
+
+function generateBA(n, mLinks){
+  const degree = new Array(n).fill(0);
+  const targets = [];
+  for (let i=0;i<mLinks;i++){
+    for (let j=i+1;j<mLinks;j++){
+      degree[i]++; degree[j]++;
+    }
+  }
+  for (let i=0;i<mLinks;i++){
+    for (let d=0; d<degree[i]; d++) targets.push(i);
+  }
+  for (let newNode=mLinks; newNode<n; newNode++){
+    const chosen = new Set();
+    let guard = 0;
+    while (chosen.size < mLinks && guard < 5000){
+      guard++;
+      if (targets.length===0){ chosen.add(Math.floor(Math.random()*newNode)); continue; }
+      const pick = targets[Math.floor(Math.random()*targets.length)];
+      chosen.add(pick);
+    }
+    chosen.forEach(t => {
+      degree[newNode]++; degree[t]++;
+      targets.push(t); targets.push(newNode);
+    });
+  }
+  return degree;
+}
+
+function generateER(n, avgDegree){
+  const p = Math.min(1, avgDegree/(n-1));
+  const degree = new Array(n).fill(0);
+  for (let i=0;i<n;i++){
+    for (let j=i+1;j<n;j++){
+      if (Math.random() < p){ degree[i]++; degree[j]++; }
+    }
+  }
+  return degree;
+}
+
+function degreeDistribution(degrees){
+  const counts = {};
+  degrees.forEach(d => { counts[d] = (counts[d]||0)+1; });
+  return counts;
+}
+
+function toPoints(counts, n){
+  return Object.keys(counts)
+    .map(k => ({ k: Number(k), count: counts[k] }))
+    .filter(o => o.k > 0)
+    .sort((a,b) => a.k-b.k)
+    .map(o => ({ x:o.k, y:o.count/n }));
+}
+
+function linregress(points){
+  const n = points.length;
+  if (n < 2) return null;
+  const sumX = points.reduce((s,p)=>s+p.x,0);
+  const sumY = points.reduce((s,p)=>s+p.y,0);
+  const sumXY = points.reduce((s,p)=>s+p.x*p.y,0);
+  const sumXX = points.reduce((s,p)=>s+p.x*p.x,0);
+  const denom = (n*sumXX - sumX*sumX);
+  if (denom === 0) return null;
+  const slope = (n*sumXY - sumX*sumY) / denom;
+  const intercept = (sumY - slope*sumX) / n;
+  return { slope, intercept };
+}
+
+function fmt(v){
+  if (v===null || v===undefined || Number.isNaN(v)) return '—';
+  return (Math.round(v*100)/100).toString();
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+let prevStats = {};
+
+function renderHubs(degrees){
+  const indexed = degrees.map((d,i)=>({i,d})).sort((a,b)=>b.d-a.d).slice(0,5);
+  const maxD = indexed.length ? indexed[0].d : 1;
+  hubList.innerHTML = indexed.map(o => `
+    <div class="hub-row">
+      <span class="node-tag">Nodo ${o.i}</span>
+      <div class="hub-bar-track"><div class="hub-bar-fill" style="width:${maxD?Math.round(o.d/maxD*100):0}%"></div></div>
+      <span class="deg-val">${o.d}</span>
+    </div>`).join('');
+}
+
+function niceLog10Range(values){
+  const logs = values.map(v => Math.log10(v));
+  let lo = Math.floor(Math.min(...logs));
+  let hi = Math.ceil(Math.max(...logs));
+  if (hi === lo) hi = lo+1;
+  return { lo, hi };
+}
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS(SVG_NS, tag);
+  Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
+  return el;
+}
+
+function renderChart(baPoints, erPoints, fitLine){
+  chartSvg.innerHTML = '';
+  const plotW = PLOT.width - PLOT.left - PLOT.right;
+  const plotH = PLOT.height - PLOT.top - PLOT.bottom;
+
+  const allX = [...baPoints.map(p=>p.x), ...erPoints.map(p=>p.x)];
+  const allY = [...baPoints.map(p=>p.y), ...erPoints.map(p=>p.y)];
+  if (allX.length===0) return;
+
+  const xr = niceLog10Range(allX);
+  const yr = niceLog10Range(allY);
+
+  function xPos(k){ return PLOT.left + (Math.log10(k)-xr.lo)/(xr.hi-xr.lo) * plotW; }
+  function yPos(p){ return PLOT.top + (1 - (Math.log10(p)-yr.lo)/(yr.hi-yr.lo)) * plotH; }
+
+  for (let e=xr.lo; e<=xr.hi; e++){
+    const xv = Math.pow(10,e);
+    const x = xPos(xv);
+    chartSvg.appendChild(svgEl('line', { class:'grid-line', x1:x, y1:PLOT.top, x2:x, y2:PLOT.top+plotH }));
+    const lbl = svgEl('text', { class:'tick-label', x:x, y:PLOT.top+plotH+14, 'text-anchor':'middle' });
+    lbl.textContent = String(xv);
+    chartSvg.appendChild(lbl);
+  }
+  for (let e=yr.lo; e<=yr.hi; e++){
+    const yv = Math.pow(10,e);
+    const y = yPos(yv);
+    chartSvg.appendChild(svgEl('line', { class:'grid-line', x1:PLOT.left, y1:y, x2:PLOT.left+plotW, y2:y }));
+    const lbl = svgEl('text', { class:'tick-label', x:PLOT.left-6, y:y+3, 'text-anchor':'end' });
+    lbl.textContent = e===0 ? '1' : `1e${e}`;
+    chartSvg.appendChild(lbl);
+  }
+
+  chartSvg.appendChild(svgEl('line', { class:'axis-line', x1:PLOT.left, y1:PLOT.top, x2:PLOT.left, y2:PLOT.top+plotH }));
+  chartSvg.appendChild(svgEl('line', { class:'axis-line', x1:PLOT.left, y1:PLOT.top+plotH, x2:PLOT.left+plotW, y2:PLOT.top+plotH }));
+
+  const xTitle = svgEl('text', { class:'axis-title', x:PLOT.left+plotW/2, y:PLOT.height-4, 'text-anchor':'middle' });
+  xTitle.textContent = 'grado k (log)';
+  chartSvg.appendChild(xTitle);
+
+  const yTitle = svgEl('text', { class:'axis-title', x:-(PLOT.top+plotH/2), y:12, 'text-anchor':'middle', transform:'rotate(-90)' });
+  yTitle.textContent = 'P(k) (log)';
+  chartSvg.appendChild(yTitle);
+
+  if (fitLine && fitLine.length===2){
+    chartSvg.appendChild(svgEl('line', {
+      class:'fit-line',
+      x1:xPos(fitLine[0].x), y1:yPos(fitLine[0].y),
+      x2:xPos(fitLine[1].x), y2:yPos(fitLine[1].y)
+    }));
+  }
+
+  erPoints.forEach(p => {
+    chartSvg.appendChild(svgEl('circle', { class:'pt-er', cx:xPos(p.x), cy:yPos(p.y), r:3.6 }));
+  });
+  baPoints.forEach(p => {
+    chartSvg.appendChild(svgEl('circle', { class:'pt-ba', cx:xPos(p.x), cy:yPos(p.y), r:3.6 }));
+  });
+}
+
+function generateAndRender(){
+  const baDegrees = generateBA(N, m);
+  const avgDeg = baDegrees.reduce((a,b)=>a+b,0)/N;
+  const erDegrees = generateER(N, avgDeg);
+
+  const baCounts = degreeDistribution(baDegrees);
+  const erCounts = degreeDistribution(erDegrees);
+  const baPoints = toPoints(baCounts, N);
+  const erPoints = toPoints(erCounts, N);
+
+  const logPoints = baPoints.map(p => ({ x: Math.log10(p.x), y: Math.log10(p.y) }));
+  const fit = linregress(logPoints);
+  const gamma = fit ? -fit.slope : null;
+
+  let fitLine = [];
+  if (fit && baPoints.length){
+    const minK = Math.min(...baPoints.map(p=>p.x));
+    const maxK = Math.max(...baPoints.map(p=>p.x));
+    const y1 = Math.pow(10, fit.intercept + fit.slope*Math.log10(minK));
+    const y2 = Math.pow(10, fit.intercept + fit.slope*Math.log10(maxK));
+    fitLine = [{x:minK,y:y1},{x:maxK,y:y2}];
+  }
+
+  const maxDegree = Math.max(...baDegrees);
+  document.getElementById('statMaxNum').textContent = maxDegree;
+  document.getElementById('statGammaNum').textContent = fmt(gamma);
+  flashStat(document.getElementById('statGamma'), prevStats.gamma !== undefined && prevStats.gamma !== gamma);
+  prevStats.gamma = gamma;
+
+  renderHubs(baDegrees);
+  renderChart(baPoints, erPoints, fitLine);
+
+  readout.innerHTML = `<b>Grado máximo en la red libre de escala: ${maxDegree}</b> (grado promedio ⟨k⟩ ≈ ${fmt(avgDeg)}, usado también para generar la red aleatoria comparable).
+    <span class="eq">Ajuste: log P(k) ≈ ${fmt(fit?fit.intercept:null)} + (${fmt(fit?fit.slope:null)}) · log k  →  γ ≈ ${fmt(gamma)}</span>`;
+}
+
+nMinus.addEventListener('click', () => { if (N>N_MIN){ N-=N_STEP; updateControls(); }});
+nPlus.addEventListener('click', () => { if (N<N_MAX){ N+=N_STEP; updateControls(); }});
+mMinus.addEventListener('click', () => { if (m>M_MIN){ m--; updateControls(); }});
+mPlus.addEventListener('click', () => { if (m<M_MAX){ m++; updateControls(); }});
+
+generateBtn.addEventListener('click', generateAndRender);
+resetBtn.addEventListener('click', () => {
+  N = 150; m = 2;
+  updateControls();
+  chartSvg.innerHTML = '';
+  hubList.innerHTML = '';
+  readout.innerHTML = 'Genera una red para ver los resultados.';
+  document.getElementById('statMaxNum').textContent = '—';
+  document.getElementById('statGammaNum').textContent = '—';
+});
+
+updateControls();
+</script>
+</body>
+</html>
