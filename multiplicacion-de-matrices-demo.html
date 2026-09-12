@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplicación de matrices — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,4vw,38px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:680px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper .lbl{color:var(--ink-soft);}
+  .stepper button{
+    width:26px;height:26px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:13px;
+    min-width:16px;
+    text-align:center;
+  }
+
+  button.ghost{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.ghost:hover{border-color:var(--teal);color:var(--teal);}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px 22px 22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 4px;
+    line-height:1.5;
+  }
+  .dims-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+  }
+  .dims-line b{color:var(--teal);}
+
+  .mult-row{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    flex-wrap:wrap;
+    overflow-x:auto;
+    padding-bottom:6px;
+  }
+  .mat-block{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;}
+  .mat-block .mat-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:var(--ink);
+  }
+  .mat-op{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--ink-soft);
+    align-self:center;
+    margin-top:26px;
+    flex-shrink:0;
+  }
+
+  table.matrix{
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+  }
+  table.matrix td{
+    width:42px;height:36px;
+    padding:0;
+    border:1px solid var(--line);
+    transition:background .15s ease;
+  }
+  table.matrix.matrix-c td{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+    cursor:pointer;
+  }
+  table.matrix.matrix-c td:hover{background:var(--teal-soft);}
+  table.matrix input{
+    width:100%;height:100%;
+    border:none;
+    outline:none;
+    background:transparent;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--ink);
+  }
+  table.matrix input:focus{box-shadow:inset 0 0 0 2px var(--teal);}
+  table.matrix td.query{background:var(--amber-soft);box-shadow:inset 0 0 0 2px var(--amber);color:var(--amber);}
+  table.matrix td.hl-row{background:#E8F0FB;}
+  table.matrix td.hl-col{background:#F1EAF9;}
+  table.matrix td.flash{animation:flashPulse 900ms ease-out;}
+  @keyframes flashPulse{
+    0%{background-color:#FFE066;box-shadow:inset 0 0 0 2px #F5C518;}
+    100%{background-color:transparent;box-shadow:inset 0 0 0 0 transparent;}
+  }
+
+  .readout{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+    overflow-x:auto;
+    white-space:nowrap;
+  }
+  .readout .eq .term{color:var(--ink-soft);}
+  .readout .eq .term.nz{color:var(--teal);font-weight:600;}
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Álgebra lineal · Concepto único</div>
+  <h1>Multiplicación de matrices</h1>
+  <p class="lede">El producto C = A × B se calcula fila por columna: cada entrada de C es la suma de multiplicar cada elemento de una fila de A por el elemento correspondiente de una columna de B. Ajusta filas y columnas por separado — hasta 7 elementos cada una — para trabajar tanto con matrices cuadradas como no cuadradas.</p>
+
+  <div class="toolbar">
+    <div class="stepper">
+      <span class="lbl">Filas de A (m)</span>
+      <button id="mMinus">−</button>
+      <span class="n-value" id="mValue">3</span>
+      <button id="mPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Cols. de A / filas de B (n)</span>
+      <button id="nMinus">−</button>
+      <span class="n-value" id="nValue">3</span>
+      <button id="nPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Cols. de B (p)</span>
+      <button id="pMinus">−</button>
+      <span class="n-value" id="pValue">3</span>
+      <button id="pPlus">+</button>
+    </div>
+    <button class="ghost" id="randomBtn">Rellenar al azar</button>
+    <button class="ghost" id="resetBtn">Reiniciar a ceros</button>
+  </div>
+
+  <div class="card">
+    <h2>C = A × B</h2>
+    <p class="hint">Escribe valores en A y B. Haz clic en una celda de C para ver cómo se calcula: fila de A por columna de B, término a término.</p>
+    <p class="dims-line">A es <b id="dimA">3×3</b>, B es <b id="dimB">3×3</b> → C es <b id="dimC">3×3</b></p>
+    <div class="mult-row">
+      <div class="mat-block">
+        <span class="mat-label">A</span>
+        <table class="matrix" id="matrixA"></table>
+      </div>
+      <span class="mat-op">×</span>
+      <div class="mat-block">
+        <span class="mat-label">B</span>
+        <table class="matrix" id="matrixB"></table>
+      </div>
+      <span class="mat-op">=</span>
+      <div class="mat-block">
+        <span class="mat-label">C</span>
+        <table class="matrix matrix-c" id="matrixC"></table>
+      </div>
+    </div>
+    <div class="readout" id="readout">Escribe algunos valores en A y B para ver el producto.</div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerla:</b> para que A × B exista, el número de columnas de A debe coincidir con el número de filas de B — por eso aquí ambas comparten el mismo control, <code>n</code>. La entrada <code>C[i,j]</code> se calcula como <code>Σₖ A[i,k] × B[k,j]</code>: se recorre cada posición <code>k</code> de la fila i de A y la columna j de B, se multiplican los pares y se suman los resultados. El resultado C siempre tiene tantas filas como A (<code>m</code>) y tantas columnas como B (<code>p</code>). A diferencia de la multiplicación de números, en general <code>A × B ≠ B × A</code>.
+  </div>
+</div>
+
+<script>
+let m = 3, n = 3, p = 3;
+const DIM_MIN = 1, DIM_MAX = 7;
+
+let A = [], B = [];
+let queryPair = null; // {r,c} referring to C
+let prevC = {};
+
+const matrixATable = document.getElementById('matrixA');
+const matrixBTable = document.getElementById('matrixB');
+const matrixCTable = document.getElementById('matrixC');
+const readout = document.getElementById('readout');
+const dimA = document.getElementById('dimA');
+const dimB = document.getElementById('dimB');
+const dimC = document.getElementById('dimC');
+
+function zerosArray(rows, cols){
+  return Array.from({length:rows}, () => Array(cols).fill(0));
+}
+
+function fmt(v){
+  return Number.isInteger(v) ? String(v) : (Math.round(v*100)/100).toString();
+}
+
+function matMul(M1, M2, rows, inner, cols){
+  const out = Array.from({length:rows}, () => Array(cols).fill(0));
+  for (let i=0;i<rows;i++){
+    for (let j=0;j<cols;j++){
+      let sum = 0;
+      for (let k=0;k<inner;k++) sum += M1[i][k]*M2[k][j];
+      out[i][j] = sum;
+    }
+  }
+  return out;
+}
+
+function currentC(){
+  return matMul(A, B, m, n, p);
+}
+
+function renderInputTable(table, arr, rows, cols, highlightFn, onChangeExtra){
+  let html = '';
+  for (let i=0;i<rows;i++){
+    html += '<tr>';
+    for (let j=0;j<cols;j++){
+      const extra = highlightFn ? highlightFn(i,j) : '';
+      html += `<td class="${extra}" data-r="${i}" data-c="${j}"><input type="text" inputmode="decimal" value="${arr[i][j]}"></td>`;
+    }
+    html += '</tr>';
+  }
+  table.innerHTML = html;
+  table.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const td = e.target.closest('td');
+      const r = parseInt(td.dataset.r), c = parseInt(td.dataset.c);
+      const v = parseFloat(e.target.value);
+      arr[r][c] = isNaN(v) ? 0 : v;
+      onValuesChanged();
+    });
+  });
+}
+
+function renderMatrixC(){
+  const C = currentC();
+  let html = '';
+  const changedCells = [];
+  for (let i=0;i<m;i++){
+    html += '<tr>';
+    for (let j=0;j<p;j++){
+      const val = C[i][j];
+      const key = i+','+j;
+      if (prevC[key] !== undefined && prevC[key] !== val) changedCells.push(key);
+      prevC[key] = val;
+      const isQuery = queryPair && queryPair.r===i && queryPair.c===j;
+      const cls = isQuery ? 'query' : '';
+      html += `<td class="${cls}" data-r="${i}" data-c="${j}">${fmt(val)}</td>`;
+    }
+    html += '</tr>';
+  }
+  matrixCTable.innerHTML = html;
+  matrixCTable.querySelectorAll('td[data-r]').forEach(td => {
+    const r = parseInt(td.dataset.r), c = parseInt(td.dataset.c);
+    td.addEventListener('click', () => onCellClick(r,c));
+  });
+  changedCells.forEach(key => {
+    const td = matrixCTable.querySelector(`td[data-r="${key.split(',')[0]}"][data-c="${key.split(',')[1]}"]`);
+    if (td){
+      td.classList.add('flash');
+      td.addEventListener('animationend', () => td.classList.remove('flash'), { once:true });
+    }
+  });
+  return C;
+}
+
+function onCellClick(r,c){
+  if (queryPair && queryPair.r===r && queryPair.c===c){
+    queryPair = null;
+  } else {
+    queryPair = {r,c};
+  }
+  renderAll();
+}
+
+function onValuesChanged(){
+  // Only refresh C + readout; leave A/B input DOM untouched so typing keeps focus.
+  renderMatrixC();
+  renderReadout();
+}
+
+function renderReadout(){
+  const anyValue = A.some(row => row.some(v => v!==0)) || B.some(row => row.some(v => v!==0));
+  if (!anyValue){
+    readout.innerHTML = 'Escribe algunos valores en A y B para ver el producto.';
+    return;
+  }
+  if (!queryPair){
+    readout.innerHTML = 'Haz clic en una celda de <b>C</b> para ver cómo se calcula sumando los productos de la fila de A por la columna de B.';
+    return;
+  }
+  const { r, c } = queryPair;
+  const C = currentC();
+  const val = C[r][c];
+
+  const terms = [];
+  for (let k=0;k<n;k++){
+    const av = A[r][k], bv = B[k][c];
+    const nz = (av*bv) !== 0;
+    terms.push(`<span class="term${nz?' nz':''}">A[${r},${k}]×B[${k},${c}]=${fmt(av)}×${fmt(bv)}</span>`);
+  }
+  const sumExpr = Array.from({length:n}, (_,k) => fmt(A[r][k]*B[k][c])).join(' + ');
+
+  readout.innerHTML = `<b>C[${r},${c}] = ${fmt(val)}</b> — suma sobre cada posición k de A[${r},k] × B[k,${c}].
+    <span class="eq">${terms.join('  +  ')}</span>
+    <span class="eq">= ${sumExpr} = ${fmt(val)}</span>`;
+}
+
+function updateDimLabels(){
+  dimA.textContent = `${m}×${n}`;
+  dimB.textContent = `${n}×${p}`;
+  dimC.textContent = `${m}×${p}`;
+  document.getElementById('mValue').textContent = m;
+  document.getElementById('nValue').textContent = n;
+  document.getElementById('pValue').textContent = p;
+  document.getElementById('mMinus').disabled = m<=DIM_MIN;
+  document.getElementById('mPlus').disabled = m>=DIM_MAX;
+  document.getElementById('nMinus').disabled = n<=DIM_MIN;
+  document.getElementById('nPlus').disabled = n>=DIM_MAX;
+  document.getElementById('pMinus').disabled = p<=DIM_MIN;
+  document.getElementById('pPlus').disabled = p>=DIM_MAX;
+}
+
+function renderAll(){
+  const ri = queryPair ? queryPair.r : -1;
+  const ci = queryPair ? queryPair.c : -1;
+  renderInputTable(matrixATable, A, m, n, (r,c) => r===ri ? 'hl-row' : '');
+  renderInputTable(matrixBTable, B, n, p, (r,c) => c===ci ? 'hl-col' : '');
+  renderMatrixC();
+  renderReadout();
+  updateDimLabels();
+}
+
+function resizeArrays(){
+  const newA = zerosArray(m, n);
+  const newB = zerosArray(n, p);
+  for (let i=0;i<Math.min(m, A.length);i++)
+    for (let j=0;j<Math.min(n, A[0]?A[0].length:0);j++)
+      newA[i][j] = A[i][j];
+  for (let i=0;i<Math.min(n, B.length);i++)
+    for (let j=0;j<Math.min(p, B[0]?B[0].length:0);j++)
+      newB[i][j] = B[i][j];
+  A = newA; B = newB;
+}
+
+document.getElementById('mMinus').addEventListener('click', () => { if(m>DIM_MIN){ m--; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+document.getElementById('mPlus').addEventListener('click', () => { if(m<DIM_MAX){ m++; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+document.getElementById('nMinus').addEventListener('click', () => { if(n>DIM_MIN){ n--; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+document.getElementById('nPlus').addEventListener('click', () => { if(n<DIM_MAX){ n++; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+document.getElementById('pMinus').addEventListener('click', () => { if(p>DIM_MIN){ p--; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+document.getElementById('pPlus').addEventListener('click', () => { if(p<DIM_MAX){ p++; resizeArrays(); queryPair=null; prevC={}; renderAll(); }});
+
+document.getElementById('randomBtn').addEventListener('click', () => {
+  A = Array.from({length:m}, () => Array.from({length:n}, () => Math.floor(Math.random()*11)-5));
+  B = Array.from({length:n}, () => Array.from({length:p}, () => Math.floor(Math.random()*11)-5));
+  queryPair = null; prevC = {};
+  renderAll();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  A = zerosArray(m, n);
+  B = zerosArray(n, p);
+  queryPair = null; prevC = {};
+  renderAll();
+});
+
+A = zerosArray(m, n);
+B = zerosArray(n, p);
+renderAll();
+</script>
+</body>
+</html>
