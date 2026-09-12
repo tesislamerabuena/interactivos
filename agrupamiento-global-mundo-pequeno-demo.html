@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coeficiente de agrupamiento global en una red de mundo pequeño — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(26px,4vw,38px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:660px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper .lbl{color:var(--ink-soft);font-size:13px;}
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:40px;
+    text-align:center;
+  }
+
+  button.reset, button.primary{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset{
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+  button.primary{
+    color:#fff;
+    background:var(--teal);
+    border:1px solid var(--teal);
+  }
+  button.primary:hover{background:#0c8f8e;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink-soft);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:1.8;
+    fill:none;
+  }
+  .edge.rewired{stroke:var(--amber);stroke-width:2.2;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 8px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:20px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .count-row{
+    display:flex;
+    gap:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .count-row b{color:var(--ink);}
+
+  .compare-table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    margin-bottom:16px;
+  }
+  .compare-table th, .compare-table td{
+    border:1px solid var(--line);
+    padding:6px 8px;
+    text-align:center;
+  }
+  .compare-table th{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:11px;
+    color:var(--ink-soft);
+    background:#FAFBFE;
+  }
+  .compare-table td.hero{color:var(--ink);font-weight:700;}
+  .compare-table td.ratio{color:var(--teal);font-weight:700;}
+
+  .history-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:8px;
+  }
+  .history-row .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:3px 9px;
+  }
+  .history-row .chip.current{background:var(--teal-soft);color:var(--teal);border-color:var(--teal);}
+  .history-empty{font-size:12.5px;color:var(--ink-soft);}
+
+  .readout{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Coeficiente de agrupamiento global en una red de mundo pequeño</h1>
+  <p class="lede">El coeficiente de agrupamiento global (o transitividad) mide, para toda la red a la vez, qué fracción de las "tríadas" — dos enlaces que comparten un nodo — se cierran en un triángulo. A diferencia del promedio simple de coeficientes locales, aquí los nodos con más vecinos pesan más. Genera una red de mundo pequeño y compara ambos.</p>
+
+  <div class="toolbar">
+    <div class="stepper">
+      <span class="lbl">Nodos (N)</span>
+      <button id="nMinus">−</button>
+      <span class="n-value" id="nValue">12</span>
+      <button id="nPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Vecinos por lado (K)</span>
+      <button id="kMinus">−</button>
+      <span class="n-value" id="kValue">2</span>
+      <button id="kPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Reconexión (β)</span>
+      <button id="betaMinus">−</button>
+      <span class="n-value" id="betaValue">0.10</span>
+      <button id="betaPlus">+</button>
+    </div>
+    <button class="primary" id="generateBtn">Generar red de mundo pequeño</button>
+    <button class="reset" id="resetBtn">Reiniciar</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Anillo con reconexiones</h2>
+      <p class="hint">Los enlaces del anillo original se ven en gris; los reconectados al azar, en ámbar. También puedes editar enlaces a mano.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Agrupamiento global</h2>
+      <p class="hint">C_global pondera cada nodo por su número de tríadas; C̄ promedia los coeficientes locales por igual.</p>
+
+      <div class="stats-row">
+        <div class="stat" id="statN">
+          <div class="num" id="statNNum">12</div>
+          <div class="lbl">Nodos (N)</div>
+        </div>
+        <div class="stat" id="statGlobal">
+          <div class="num" id="statGlobalNum">—</div>
+          <div class="lbl">C_global (transitividad)</div>
+        </div>
+        <div class="stat" id="statAvg">
+          <div class="num" id="statAvgNum">—</div>
+          <div class="lbl">C̄ (promedio local)</div>
+        </div>
+      </div>
+
+      <div class="count-row">
+        <span>Triángulos: <b id="triCount">0</b></span>
+        <span>Tríadas conectadas: <b id="triadCount">0</b></span>
+      </div>
+
+      <table class="compare-table" id="compareTable"></table>
+
+      <p class="hint" style="margin-bottom:6px;">Historial de generaciones (C_global de cada intento con esta β):</p>
+      <div class="history-row" id="historyRow"><span class="history-empty">Aún no has generado ninguna red.</span></div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> una tríada centrada en un nodo i es cualquier par de sus vecinos (haya o no un enlace directo entre ellos); hay <code>k(k−1)/2</code> tríadas posibles si i tiene grado k. Un triángulo es una tríada donde ese par extra sí está conectado. El coeficiente global es <code>C_global = 3 × triángulos / tríadas conectadas</code> — equivalente a sumar los enlaces reales entre vecinos de todos los nodos y dividir entre la suma de tríadas posibles. Como los nodos de grado alto aportan muchas más tríadas, su coeficiente local pesa más en C_global que en el promedio simple C̄; si esos nodos muy conectados tienden a tener menor agrupamiento local (algo común en redes reales con hubs), C_global suele quedar por debajo de C̄.
+  </div>
+</div>
+
+<script>
+let numNodes = 12;
+const N_MIN = 6, N_MAX = 16;
+let K = 2;
+let beta = 0.10;
+const BETA_STEP = 0.05;
+const HISTORY_CAP = 12;
+
+let nodes = [];
+const cx = 240, cy = 210, r = 160;
+let positions = {};
+
+let edges = new Set(); // pairKey strings
+let rewiredSet = new Set();
+let selected = null;
+let history = [];
+let prevStats = {};
+let hasGenerated = false;
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const resetBtn = document.getElementById('resetBtn');
+const generateBtn = document.getElementById('generateBtn');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const kMinus = document.getElementById('kMinus');
+const kPlus = document.getElementById('kPlus');
+const kValue = document.getElementById('kValue');
+const betaMinus = document.getElementById('betaMinus');
+const betaPlus = document.getElementById('betaPlus');
+const betaValue = document.getElementById('betaValue');
+const compareTable = document.getElementById('compareTable');
+const historyRow = document.getElementById('historyRow');
+const readout = document.getElementById('readout');
+
+function maxK(){ return Math.floor((numNodes-1)/2); }
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String(i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function pairKey(a,b){ return [Number(a),Number(b)].sort((x,y)=>x-y).join('-'); }
+
+function hasConnectionIn(edgeSet,a,b){ return edgeSet.has(pairKey(a,b)); }
+function hasConnection(a,b){ return hasConnectionIn(edges,a,b); }
+
+function toggleEdge(a,b){
+  if (a===b) return;
+  const k = pairKey(a,b);
+  if (edges.has(k)) edges.delete(k); else edges.add(k);
+  rewiredSet.delete(k);
+}
+
+function neighborsIn(edgeSet, a){
+  return nodes.filter(m => m!==a && hasConnectionIn(edgeSet,a,m));
+}
+function neighbors(a){ return neighborsIn(edges, a); }
+
+function buildLatticeInto(edgeSet, kNeighbors){
+  edgeSet.clear();
+  for (let i=0;i<numNodes;i++){
+    for (let d=1; d<=kNeighbors; d++){
+      const j = (i+d) % numNodes;
+      edgeSet.add(pairKey(nodes[i], nodes[j]));
+    }
+  }
+}
+
+function clusteringStatsIn(edgeSet){
+  let sumE = 0, sumTriads = 0, sumLocal = 0;
+  nodes.forEach(nd => {
+    const nbrs = neighborsIn(edgeSet, nd);
+    const k = nbrs.length;
+    let e = 0;
+    if (k>=2){
+      for (let i=0;i<k;i++){
+        for (let j=i+1;j<k;j++){
+          if (hasConnectionIn(edgeSet, nbrs[i], nbrs[j])) e++;
+        }
+      }
+    }
+    const triads = k>=2 ? k*(k-1)/2 : 0;
+    sumE += e;
+    sumTriads += triads;
+    sumLocal += triads>0 ? e/triads : 0;
+  });
+  const triangles = sumE/3;
+  const globalC = sumTriads>0 ? sumE/sumTriads : null;
+  const avgC = sumLocal/numNodes;
+  return { globalC, avgC, triangles, triads: sumTriads };
+}
+
+function rewireNetwork(kNeighbors, betaVal){
+  const lattice = new Set();
+  buildLatticeInto(lattice, kNeighbors);
+
+  const working = new Set(lattice);
+  const rewired = new Set();
+
+  for (let d=1; d<=kNeighbors; d++){
+    for (let i=0;i<numNodes;i++){
+      const a = nodes[i];
+      const b = nodes[(i+d) % numNodes];
+      const key = pairKey(a,b);
+      if (!working.has(key)) continue;
+      if (Math.random() < betaVal){
+        working.delete(key);
+        let newTarget = null, attempts = 0;
+        while (attempts < 60){
+          const candidate = nodes[Math.floor(Math.random()*numNodes)];
+          attempts++;
+          if (candidate!==a && !working.has(pairKey(a,candidate))){
+            newTarget = candidate;
+            break;
+          }
+        }
+        if (newTarget !== null){
+          const newKey = pairKey(a,newTarget);
+          working.add(newKey);
+          rewired.add(newKey);
+        } else {
+          working.add(key);
+        }
+      }
+    }
+  }
+  return { edgeSet: working, rewiredSet: rewired };
+}
+
+function generateRandom(){
+  const { edgeSet, rewiredSet: rw } = rewireNetwork(K, beta);
+  edges = edgeSet;
+  rewiredSet = rw;
+  hasGenerated = true;
+  const { globalC } = clusteringStatsIn(edges);
+  history.push(globalC);
+  if (history.length > HISTORY_CAP) history.shift();
+  renderAll();
+}
+
+function renderNodesFn(){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(nd => {
+    const p2 = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p2.x); c.setAttribute('cy', p2.y); c.setAttribute('r', 16);
+    c.setAttribute('class', 'node-circle' + (selected === nd ? ' selected' : ''));
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p2.x); t.setAttribute('y', p2.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 18;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  edges.forEach(key => {
+    const [a,b] = key.split('-');
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class', 'edge' + (rewiredSet.has(key) ? ' rewired' : ''));
+    edgesLayer.appendChild(line);
+  });
+}
+
+function fmt(v){
+  if (v===null || v===undefined || Number.isNaN(v)) return '—';
+  return (Math.round(v*100)/100).toString();
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function updateControls(){
+  nValue.textContent = numNodes;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+  kValue.textContent = K;
+  kMinus.disabled = K<=1;
+  kPlus.disabled = K>=maxK();
+  betaValue.textContent = fmt(beta);
+  betaMinus.disabled = beta<=1e-9;
+  betaPlus.disabled = beta>=1-1e-9;
+}
+
+function renderHistory(){
+  if (history.length===0){
+    historyRow.innerHTML = '<span class="history-empty">Aún no has generado ninguna red.</span>';
+    return;
+  }
+  historyRow.innerHTML = history.map((v,i) => `<span class="chip${i===history.length-1?' current':''}">${fmt(v)}</span>`).join('');
+}
+
+function renderAll(){
+  const stats = clusteringStatsIn(edges);
+
+  document.getElementById('statNNum').textContent = numNodes;
+  document.getElementById('statGlobalNum').textContent = fmt(stats.globalC);
+  document.getElementById('statAvgNum').textContent = fmt(stats.avgC);
+  document.getElementById('triCount').textContent = Math.round(stats.triangles);
+  document.getElementById('triadCount').textContent = stats.triads;
+
+  flashStat(document.getElementById('statGlobal'), prevStats.g !== undefined && prevStats.g !== stats.globalC);
+  prevStats.g = stats.globalC;
+
+  renderNodesFn();
+  renderEdges();
+  renderHistory();
+  updateControls();
+
+  const lattice = new Set();
+  buildLatticeInto(lattice, K);
+  const latticeStats = clusteringStatsIn(lattice);
+
+  let tableHtml = `<tr><th></th><th>β = 0 (anillo)</th><th>tu red (β=${fmt(beta)})</th></tr>`;
+  tableHtml += `<tr><td>C_global</td><td>${fmt(latticeStats.globalC)}</td><td class="hero">${fmt(stats.globalC)}</td></tr>`;
+  tableHtml += `<tr><td>C̄</td><td>${fmt(latticeStats.avgC)}</td><td class="hero">${fmt(stats.avgC)}</td></tr>`;
+  compareTable.innerHTML = tableHtml;
+
+  const validHistory = history.filter(v=>v!==null);
+  const avgHistory = validHistory.length ? validHistory.reduce((a,b)=>a+b,0)/validHistory.length : null;
+
+  if (!hasGenerated && edges.size===0){
+    readout.innerHTML = 'Genera una red de mundo pequeño, o construye una a mano haciendo clic en los nodos.';
+  } else {
+    let msg = `<b>C_global = ${fmt(stats.globalC)}</b> frente a <b>C̄ = ${fmt(stats.avgC)}</b> con β = ${fmt(beta)}.
+      <span class="eq">C_global = 3 × triángulos / tríadas = 3×${Math.round(stats.triangles)} / ${stats.triads} = ${fmt(stats.globalC)}</span>`;
+    if (avgHistory !== null){
+      msg += `<span class="eq">Promedio de C_global en tus ${validHistory.length} generaciones con esta β: ${fmt(avgHistory)}</span>`;
+    }
+    readout.innerHTML = msg;
+  }
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+    hasGenerated = true;
+  }
+  renderAll();
+}
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    if (K>maxK()) K = maxK();
+    edges.clear(); rewiredSet.clear();
+    selected=null; history=[]; hasGenerated=false;
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear(); rewiredSet.clear();
+    selected=null; history=[]; hasGenerated=false;
+    rebuildNodes();
+    renderAll();
+  }
+});
+kMinus.addEventListener('click', () => {
+  if (K>1){ K--; edges.clear(); rewiredSet.clear(); history=[]; hasGenerated=false; renderAll(); }
+});
+kPlus.addEventListener('click', () => {
+  if (K<maxK()){ K++; edges.clear(); rewiredSet.clear(); history=[]; hasGenerated=false; renderAll(); }
+});
+betaMinus.addEventListener('click', () => {
+  beta = Math.max(0, Math.round((beta-BETA_STEP)*100)/100);
+  renderAll();
+});
+betaPlus.addEventListener('click', () => {
+  beta = Math.min(1, Math.round((beta+BETA_STEP)*100)/100);
+  renderAll();
+});
+
+generateBtn.addEventListener('click', generateRandom);
+
+resetBtn.addEventListener('click', () => {
+  edges.clear(); rewiredSet.clear();
+  selected=null; history=[]; hasGenerated=false;
+  renderAll();
+});
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
