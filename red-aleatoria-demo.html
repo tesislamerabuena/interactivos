@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Aleatoria (Erdős–Rényi) — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7FB; --card:#FFFFFF; --ink:#16233F; --ink-soft:#5B6B8C;
+    --line:#DDE4F0; --teal:#0EA5A4; --teal-soft:#E3F6F5;
+    --amber:#E8871E; --amber-soft:#FCEEDD; --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;padding:40px 20px 60px;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:10px;}
+  h1{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(28px,4vw,40px);margin:0 0 10px;letter-spacing:-0.01em;}
+  .lede{color:var(--ink-soft);font-size:16px;line-height:1.6;max-width:660px;margin:0 0 28px;}
+
+  .controls{
+    display:grid;
+    grid-template-columns:1fr 1fr auto;
+    gap:20px;
+    align-items:end;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:22px;
+  }
+  @media (max-width:680px){ .controls{grid-template-columns:1fr;} }
+  .field label{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:13px; font-weight:600; color:var(--ink); margin-bottom:8px;
+  }
+  .field label .val{font-family:'JetBrains Mono',monospace;color:var(--teal);font-weight:600;}
+  input[type=range]{
+    -webkit-appearance:none; width:100%; height:4px; border-radius:999px;
+    background:var(--line); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--teal); border:3px solid #fff; box-shadow:0 1px 3px rgba(22,35,63,.35); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%; background:var(--teal);
+    border:3px solid #fff; box-shadow:0 1px 3px rgba(22,35,63,.35); cursor:pointer;
+  }
+  button.regen{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#fff;
+    background:var(--teal); border:none; border-radius:999px; padding:11px 20px;
+    cursor:pointer; white-space:nowrap; transition:background .15s ease;
+  }
+  button.regen:hover{background:#0C8B8A;}
+
+  .stage{display:grid; grid-template-columns:1.05fr 1fr; gap:22px;}
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:22px;}
+  .card h2{font-family:'Sora',sans-serif; font-size:14px; font-weight:700; margin:0 0 4px;}
+  .card .hint{font-size:13px; color:var(--ink-soft); margin:0 0 14px; line-height:1.5;}
+  canvas{width:100%; height:auto; display:block; border-radius:10px;}
+
+  .readout{
+    margin-top:14px; padding-top:14px; border-top:1px solid var(--line);
+    font-size:13px; color:var(--ink-soft); line-height:1.6;
+  }
+  .readout b{color:var(--ink); font-weight:600;}
+  .readout .amber{color:var(--amber); font-weight:600;}
+
+  .explain{
+    margin-top:22px; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--radius); padding:22px 24px; font-size:14px; line-height:1.7; color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{font-family:'JetBrains Mono',monospace; background:var(--teal-soft); color:var(--teal); padding:1px 6px; border-radius:4px; font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Red aleatoria (Erdős–Rényi)</h1>
+  <p class="lede">Un modelo de red aleatoria conecta cada par de nodos con una probabilidad fija <code style="font-family:'JetBrains Mono',monospace;background:var(--teal-soft);color:var(--teal);padding:1px 6px;border-radius:4px;font-size:12.5px;">p</code>. Mueve los controles y observa cómo cambian tanto la red como la distribución del grado.</p>
+
+  <div class="controls">
+    <div class="field">
+      <label>Número de nodos (n) <span class="val" id="nVal">60</span></label>
+      <input type="range" id="nSlider" min="10" max="140" step="1" value="60">
+    </div>
+    <div class="field">
+      <label>Probabilidad de conexión (p) <span class="val" id="pVal">0.15</span></label>
+      <input type="range" id="pSlider" min="0" max="100" step="1" value="15">
+    </div>
+    <button class="regen" id="regenBtn">Regenerar</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red aleatoria</h2>
+      <p class="hint">Cada par de nodos queda conectado con probabilidad p, de forma independiente.</p>
+      <canvas id="graphCanvas" width="920" height="760"></canvas>
+      <div class="readout" id="graphReadout"></div>
+    </div>
+    <div class="card">
+      <h2>Distribución del grado</h2>
+      <p class="hint">Cuántos nodos tienen cada número de conexiones (grado).</p>
+      <canvas id="histCanvas" width="920" height="760"></canvas>
+      <div class="readout" id="histReadout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Qué estás viendo:</b> con <code>n</code> nodos y probabilidad <code>p</code>, el grado esperado de cada nodo es <code>p·(n-1)</code> — en promedio, a cuántos otros nodos se conecta. Como cada conexión posible es un evento independiente de "sí/no" con probabilidad p, el grado de un nodo sigue una <b>distribución binomial</b>, que con n grande se ve como una campana centrada en ese valor esperado. Presiona <b>Regenerar</b>: la red específica cambia — es aleatoria — pero la forma de la distribución se mantiene estable, porque depende solo de n y p, no del sorteo particular.
+  </div>
+</div>
+
+<script>
+const graphCanvas = document.getElementById('graphCanvas');
+const histCanvas = document.getElementById('histCanvas');
+const gctx = graphCanvas.getContext('2d');
+const hctx = histCanvas.getContext('2d');
+const W = 460, H = 380; // logical drawing space (canvas is 2x for crispness)
+gctx.scale(2,2);
+hctx.scale(2,2);
+
+const nSlider = document.getElementById('nSlider');
+const pSlider = document.getElementById('pSlider');
+const nVal = document.getElementById('nVal');
+const pVal = document.getElementById('pVal');
+const regenBtn = document.getElementById('regenBtn');
+const graphReadout = document.getElementById('graphReadout');
+const histReadout = document.getElementById('histReadout');
+
+let positions = [];
+let lastN = -1;
+let edges = [];
+
+function currentN(){ return parseInt(nSlider.value,10); }
+function currentP(){ return parseInt(pSlider.value,10)/100; }
+
+function generatePositions(n){
+  const pts = [];
+  const cx = W/2, cy = H/2, rx = W/2 - 24, ry = H/2 - 24;
+  const area = Math.PI * rx * ry;
+  const minDist = Math.max(6, Math.min(26, 0.75 * Math.sqrt(area/n)));
+  for (let i=0; i<n; i++){
+    let placed = false;
+    for (let attempt=0; attempt<200 && !placed; attempt++){
+      const ang = Math.random()*Math.PI*2;
+      const rad = Math.sqrt(Math.random());
+      const x = cx + rx*rad*Math.cos(ang);
+      const y = cy + ry*rad*Math.sin(ang);
+      let ok = true;
+      for (const p of pts){
+        const dx=p.x-x, dy=p.y-y;
+        if (dx*dx+dy*dy < minDist*minDist){ ok=false; break; }
+      }
+      if (ok){ pts.push({x,y}); placed = true; }
+    }
+    if (!placed){
+      const ang = Math.random()*Math.PI*2;
+      const rad = Math.sqrt(Math.random());
+      pts.push({x: cx+rx*rad*Math.cos(ang), y: cy+ry*rad*Math.sin(ang)});
+    }
+  }
+  return pts;
+}
+
+function generateEdges(n,p){
+  const list = [];
+  for (let i=0;i<n;i++){
+    for (let j=i+1;j<n;j++){
+      if (Math.random() < p) list.push([i,j]);
+    }
+  }
+  return list;
+}
+
+function nodeRadius(n){
+  if (n>100) return 2.6;
+  if (n>60) return 3.4;
+  if (n>30) return 4.4;
+  return 5.6;
+}
+
+function drawGraph(){
+  const n = currentN();
+  gctx.clearRect(0,0,W,H);
+  const r = nodeRadius(n);
+  gctx.strokeStyle = 'rgba(91,107,140,0.28)';
+  gctx.lineWidth = 0.8;
+  edges.forEach(([i,j])=>{
+    const a = positions[i], b = positions[j];
+    gctx.beginPath(); gctx.moveTo(a.x,a.y); gctx.lineTo(b.x,b.y); gctx.stroke();
+  });
+  gctx.fillStyle = '#0EA5A4';
+  gctx.strokeStyle = '#FFFFFF';
+  gctx.lineWidth = 1.2;
+  positions.forEach(p=>{
+    gctx.beginPath(); gctx.arc(p.x,p.y,r,0,Math.PI*2);
+    gctx.fill(); gctx.stroke();
+  });
+}
+
+function niceStep(range, targetTicks){
+  if (range<=0) return 1;
+  const rough = range/targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough/mag;
+  let step;
+  if (norm<1.5) step=1; else if (norm<3) step=2; else if (norm<7) step=5; else step=10;
+  return step*mag;
+}
+
+function drawHistogram(){
+  const n = currentN();
+  const p = currentP();
+  const degrees = new Array(n).fill(0);
+  edges.forEach(([i,j])=>{ degrees[i]++; degrees[j]++; });
+
+  const counts = {};
+  let minD = Infinity, maxD = -Infinity;
+  degrees.forEach(d=>{
+    counts[d] = (counts[d]||0)+1;
+    if (d<minD) minD=d; if (d>maxD) maxD=d;
+  });
+  if (!isFinite(minD)){ minD=0; maxD=0; }
+  const pad = Math.max(1, Math.round((maxD-minD)*0.08));
+  minD = Math.max(0, minD-pad);
+  maxD = maxD+pad;
+  const range = Math.max(1, maxD-minD);
+
+  let maxProb = 0;
+  for (let d=minD; d<=maxD; d++){ maxProb = Math.max(maxProb, (counts[d]||0)/n); }
+  const yMax = maxProb === 0 ? 0.1 : maxProb*1.2;
+
+  hctx.clearRect(0,0,W,H);
+  const marginL=42, marginB=28, marginT=14, marginR=14;
+  const plotW = W-marginL-marginR, plotH = H-marginT-marginB;
+
+  hctx.strokeStyle = '#DDE4F0'; hctx.lineWidth = 1;
+  hctx.beginPath();
+  hctx.moveTo(marginL, marginT); hctx.lineTo(marginL, marginT+plotH); hctx.lineTo(marginL+plotW, marginT+plotH);
+  hctx.stroke();
+
+  hctx.fillStyle = '#5B6B8C';
+  hctx.font = '10px JetBrains Mono, monospace';
+  hctx.textAlign = 'right'; hctx.textBaseline = 'middle';
+  const yStep = niceStep(yMax, 5);
+  for (let v=0; v<=yMax; v+=yStep){
+    const y = marginT+plotH - (v/yMax)*plotH;
+    hctx.fillText(v.toFixed(2), marginL-6, y);
+    hctx.strokeStyle = 'rgba(221,228,240,0.6)';
+    hctx.beginPath(); hctx.moveTo(marginL,y); hctx.lineTo(marginL+plotW,y); hctx.stroke();
+  }
+
+  hctx.textAlign = 'center'; hctx.textBaseline = 'top';
+  const xStep = Math.max(1, Math.round(niceStep(range,6)));
+  for (let d=Math.ceil(minD/xStep)*xStep; d<=maxD; d+=xStep){
+    const x = marginL + ((d-minD)/range)*plotW;
+    hctx.fillText(String(d), x, marginT+plotH+6);
+  }
+
+  const barW = plotW/range;
+  hctx.fillStyle = '#0EA5A4';
+  for (let d=minD; d<=maxD; d++){
+    const c = counts[d]||0;
+    if (!c) continue;
+    const prob = c/n;
+    const x = marginL + (d-minD)*barW;
+    const bh = (prob/yMax)*plotH;
+    hctx.fillRect(x+0.5, marginT+plotH-bh, Math.max(1,barW-1), bh);
+  }
+
+  const expected = p*(n-1);
+  if (expected>=minD && expected<=maxD){
+    const ex = marginL + ((expected-minD)/range)*plotW;
+    hctx.strokeStyle = '#E8871E'; hctx.lineWidth = 1.6;
+    hctx.setLineDash([5,4]);
+    hctx.beginPath(); hctx.moveTo(ex, marginT); hctx.lineTo(ex, marginT+plotH); hctx.stroke();
+    hctx.setLineDash([]);
+  }
+}
+
+function updateReadouts(){
+  const n = currentN(), p = currentP();
+  const possible = n*(n-1)/2;
+  const density = possible>0 ? (edges.length/possible*100) : 0;
+  graphReadout.innerHTML = `<b>${edges.length}</b> aristas de ${possible} posibles (<b>${density.toFixed(1)}%</b> de densidad)`;
+  const expected = p*(n-1);
+  histReadout.innerHTML = `Grado esperado: <span class="amber">E[grado] = p·(n-1) ≈ ${expected.toFixed(2)}</span>`;
+}
+
+function render({ resamplePositions } = {}){
+  const n = currentN();
+  if (resamplePositions || n !== lastN){
+    positions = generatePositions(n);
+    lastN = n;
+  }
+  edges = generateEdges(n, currentP());
+  drawGraph();
+  drawHistogram();
+  updateReadouts();
+}
+
+nSlider.addEventListener('input', ()=>{
+  nVal.textContent = nSlider.value;
+  render({ resamplePositions:true });
+});
+pSlider.addEventListener('input', ()=>{
+  pVal.textContent = (currentP()).toFixed(2);
+  render({});
+});
+regenBtn.addEventListener('click', ()=>{
+  render({});
+});
+
+pVal.textContent = currentP().toFixed(2);
+render({ resamplePositions:true });
+</script>
+</body>
+</html>
