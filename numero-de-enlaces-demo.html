@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Número de enlaces en una red — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .switch-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    background:var(--line);
+    border-radius:999px;
+    transition:background .2s ease;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:3px;left:3px;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 2px rgba(22,35,63,.25);
+    transition:transform .2s ease;
+  }
+  input[type=checkbox]{display:none;}
+  input[type=checkbox]:checked + .switch{background:var(--teal);}
+  input[type=checkbox]:checked + .switch::after{transform:translateX(20px);}
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:76px;
+    text-align:center;
+  }
+
+  button.reset{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:stroke .15s ease, stroke-width .15s ease;
+    fill:none;
+  }
+  .edge:hover, .edge.active{stroke:var(--teal);stroke-width:4;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 10px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:26px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .density-track{
+    height:10px;
+    border-radius:999px;
+    background:#F0F2F8;
+    border:1px solid var(--line);
+    overflow:hidden;
+    margin-bottom:20px;
+  }
+  .density-fill{
+    height:100%;
+    background:var(--teal);
+    border-radius:999px;
+    transition:width .35s ease;
+    width:0%;
+  }
+
+  .degree-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:6px;
+  }
+  .degree-row{
+    display:grid;
+    grid-template-columns:20px 1fr 24px;
+    align-items:center;
+    gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .degree-row .node-tag{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    color:var(--ink);
+    font-size:13px;
+  }
+  .degree-bar-track{
+    height:8px;
+    border-radius:999px;
+    background:#F0F2F8;
+    overflow:hidden;
+  }
+  .degree-bar-fill{
+    height:100%;
+    border-radius:999px;
+    background:var(--amber);
+    transition:width .3s ease;
+  }
+  .degree-row .deg-val{text-align:right;color:var(--ink);font-weight:600;}
+  .degree-row.split{grid-template-columns:20px 1fr 1fr;}
+  .degree-row.split .sub{display:flex;flex-direction:column;gap:2px;}
+  .degree-row.split .sub-lbl{font-size:10px;letter-spacing:.03em;color:var(--ink-soft);}
+
+  .readout{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--ink);
+  }
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Número de enlaces en una red</h1>
+  <p class="lede">El número de enlaces (L) mide cuántas conexiones tiene realmente una red, frente a las que podría tener como máximo. Construye la red y observa cómo L, la densidad y los grados de cada nodo se relacionan entre sí.</p>
+
+  <div class="toolbar">
+    <label class="switch-label">
+      <input type="checkbox" id="directedToggle">
+      <span class="switch"></span>
+      Red dirigida
+    </label>
+    <div class="stepper">
+      <button id="nMinus" aria-label="Quitar nodo">−</button>
+      <span class="n-value" id="nValue">5 nodos</span>
+      <button id="nPlus" aria-label="Añadir nodo">+</button>
+    </div>
+    <button class="reset" id="resetBtn">Reiniciar conexiones</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red</h2>
+      <p class="hint">Haz clic en un nodo y luego en otro para crear o quitar un enlace.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Enlaces</h2>
+      <p class="hint">L cuenta los enlaces reales; L máx. es el total posible entre todos los pares de nodos.</p>
+
+      <div class="stats-row">
+        <div class="stat" id="statL">
+          <div class="num" id="statLNum">0</div>
+          <div class="lbl">Enlaces (L)</div>
+        </div>
+        <div class="stat" id="statLmax">
+          <div class="num" id="statLmaxNum">0</div>
+          <div class="lbl">Enlaces máx.</div>
+        </div>
+        <div class="stat" id="statDensity">
+          <div class="num" id="statDensityNum">0%</div>
+          <div class="lbl">Densidad</div>
+        </div>
+      </div>
+      <div class="density-track"><div class="density-fill" id="densityFill"></div></div>
+
+      <div class="degree-list" id="degreeList"></div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> en una red no dirigida con <code>N</code> nodos, el máximo de enlaces posibles es <code>L_max = N(N−1)/2</code> — cada par de nodos puede conectarse una sola vez. La <b>densidad</b> es la fracción de esos enlaces que realmente existen: <code>densidad = L / L_max</code>. Además, cada enlace aporta un grado a sus dos extremos, así que la suma de todos los grados siempre es el doble del número de enlaces: <code>Σ grado(i) = 2L</code> — el llamado lema del apretón de manos. En una red <b>dirigida</b>, cada enlace tiene un origen y un destino, así que el máximo es <code>L_max = N(N−1)</code>, y la suma de grados de salida y la suma de grados de entrada son ambas iguales a <code>L</code>.
+  </div>
+</div>
+
+<script>
+let numNodes = 5;
+const N_MIN = 3, N_MAX = 8;
+let nodes = [];
+const cx = 240, cy = 210, r = 150;
+let positions = {};
+
+let edges = new Set(); // "A>B", ordered by creation direction
+let directed = false;
+let selected = null;
+let prevStats = {};
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const directedToggle = document.getElementById('directedToggle');
+const resetBtn = document.getElementById('resetBtn');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const degreeList = document.getElementById('degreeList');
+const readout = document.getElementById('readout');
+const densityFill = document.getElementById('densityFill');
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String.fromCharCode(65+i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function edgeKey(a,b){ return a+'>'+b; }
+
+function hasConnection(a,b){
+  if (edges.has(edgeKey(a,b))) return true;
+  if (!directed && edges.has(edgeKey(b,a))) return true;
+  return false;
+}
+
+function toggleEdge(a,b){
+  if (a === b) return;
+  if (directed){
+    const k = edgeKey(a,b);
+    if (edges.has(k)) edges.delete(k); else edges.add(k);
+  } else {
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,a);
+    if (edges.has(k1) || edges.has(k2)){
+      edges.delete(k1); edges.delete(k2);
+    } else {
+      edges.add(k1);
+    }
+  }
+}
+
+function renderNodes(){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(nd => {
+    const p = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 24);
+    c.setAttribute('class', 'node-circle' + (selected === nd ? ' selected' : ''));
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 28;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  const drawn = new Set();
+  edges.forEach(k => {
+    const [a,b] = k.split('>');
+    const undirectedKey = [a,b].sort().join('-');
+    if (!directed && drawn.has(undirectedKey)) return;
+    drawn.add(undirectedKey);
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    if (directed){
+      const p2 = positions[b];
+      const dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+      // simple arrowhead as a small polyline appended via marker-less approach
+      line.setAttribute('marker-end','url(#arrowheadL)');
+    }
+    edgesLayer.appendChild(line);
+  });
+}
+
+function countLinks(){
+  return directed ? edges.size : new Set([...edges].map(k=>k.split('>').sort().join('-'))).size;
+}
+
+function outDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && edges.has(edgeKey(nd,m))) d++; });
+  return d;
+}
+function inDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && edges.has(edgeKey(m,nd))) d++; });
+  return d;
+}
+function undirectedDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && hasConnection(nd,m)) d++; });
+  return d;
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function renderStats(){
+  const L = countLinks();
+  const Lmax = directed ? numNodes*(numNodes-1) : numNodes*(numNodes-1)/2;
+  const density = Lmax > 0 ? (L/Lmax) : 0;
+
+  document.getElementById('statLNum').textContent = L;
+  document.getElementById('statLmaxNum').textContent = Lmax;
+  document.getElementById('statDensityNum').textContent = Math.round(density*100) + '%';
+  densityFill.style.width = Math.round(density*100) + '%';
+
+  flashStat(document.getElementById('statL'), prevStats.L !== undefined && prevStats.L !== L);
+  flashStat(document.getElementById('statLmax'), prevStats.Lmax !== undefined && prevStats.Lmax !== Lmax);
+  prevStats.L = L; prevStats.Lmax = Lmax;
+
+  return { L, Lmax, density };
+}
+
+function renderDegrees(){
+  const maxPossible = numNodes - 1;
+  let html = '';
+  if (directed){
+    nodes.forEach(nd => {
+      const out = outDegree(nd), inn = inDegree(nd);
+      html += `<div class="degree-row split">
+        <span class="node-tag">${nd}</span>
+        <div class="sub">
+          <span class="sub-lbl">salida ${out}</span>
+          <div class="degree-bar-track"><div class="degree-bar-fill" style="width:${maxPossible?Math.round(out/maxPossible*100):0}%"></div></div>
+        </div>
+        <div class="sub">
+          <span class="sub-lbl">entrada ${inn}</span>
+          <div class="degree-bar-track"><div class="degree-bar-fill" style="width:${maxPossible?Math.round(inn/maxPossible*100):0}%;background:var(--teal)"></div></div>
+        </div>
+      </div>`;
+    });
+  } else {
+    nodes.forEach(nd => {
+      const deg = undirectedDegree(nd);
+      html += `<div class="degree-row">
+        <span class="node-tag">${nd}</span>
+        <div class="degree-bar-track"><div class="degree-bar-fill" style="width:${maxPossible?Math.round(deg/maxPossible*100):0}%"></div></div>
+        <span class="deg-val">${deg}</span>
+      </div>`;
+    });
+  }
+  degreeList.innerHTML = html;
+}
+
+function renderReadout(stats){
+  const { L } = stats;
+  if (L === 0){
+    readout.innerHTML = 'Aún no hay enlaces. Crea una conexión en la red para ver las estadísticas.';
+    return;
+  }
+  if (directed){
+    const sumOut = nodes.reduce((s,nd)=>s+outDegree(nd),0);
+    const sumIn = nodes.reduce((s,nd)=>s+inDegree(nd),0);
+    readout.innerHTML = `<b>${L}</b> enlace${L===1?'':'s'} dirigido${L===1?'':'s'} en la red.
+      <span class="eq">Σ grado de salida = ${nodes.map(nd=>outDegree(nd)).join(' + ')} = ${sumOut}</span>
+      <span class="eq">Σ grado de entrada = ${nodes.map(nd=>inDegree(nd)).join(' + ')} = ${sumIn}</span>
+      <span class="eq">${sumOut} = ${sumIn} = L = ${L} ✓</span>`;
+  } else {
+    const degrees = nodes.map(nd => undirectedDegree(nd));
+    const sum = degrees.reduce((a,b)=>a+b,0);
+    readout.innerHTML = `<b>${L}</b> enlace${L===1?'':'s'} en la red.
+      <span class="eq">Σ grado(i) = ${degrees.join(' + ')} = ${sum}</span>
+      <span class="eq">${sum} = 2 × ${L} ✓ (lema del apretón de manos)</span>`;
+  }
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+  }
+  renderAll();
+}
+
+function updateNodeControls(){
+  nValue.textContent = `${numNodes} nodos`;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+}
+
+function renderAll(){
+  renderNodes();
+  renderEdges();
+  const stats = renderStats();
+  renderDegrees();
+  renderReadout(stats);
+  updateNodeControls();
+}
+
+directedToggle.addEventListener('change', (e) => {
+  directed = e.target.checked;
+  renderAll();
+});
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  renderAll();
+});
+
+// arrowhead marker for directed mode
+const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+defs.innerHTML = '<marker id="arrowheadL" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#0EA5A4"></path></marker>';
+document.getElementById('graph').prepend(defs);
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
