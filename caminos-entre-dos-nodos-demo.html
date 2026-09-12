@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caminos entre dos nodos — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .switch-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    background:var(--line);
+    border-radius:999px;
+    transition:background .2s ease;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:3px;left:3px;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 2px rgba(22,35,63,.25);
+    transition:transform .2s ease;
+  }
+  input[type=checkbox]{display:none;}
+  input[type=checkbox]:checked + .switch{background:var(--teal);}
+  input[type=checkbox]:checked + .switch::after{transform:translateX(20px);}
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:76px;
+    text-align:center;
+  }
+
+  button.reset{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--ink);stroke-width:3;fill:#F3F5FA;}
+  .node-circle.origin{stroke:var(--teal);stroke-width:3;fill:var(--teal-soft);}
+  .node-circle.destination{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:stroke .15s ease, stroke-width .15s ease;
+    fill:none;
+  }
+  .edge:hover, .edge.active{stroke:var(--amber);stroke-width:4;}
+
+  .query-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .query-row select{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 10px;
+    cursor:pointer;
+  }
+  .query-row .arrow-lbl{font-size:12px;color:var(--ink-soft);}
+  .swap-btn{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;
+    transition:all .15s ease;
+  }
+  .swap-btn:hover{border-color:var(--teal);color:var(--teal);}
+
+  .route-banner{
+    font-family:'Sora',sans-serif;
+    font-size:15px;
+    font-weight:700;
+    color:var(--ink);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:16px;
+  }
+  .route-banner .node-tag{color:var(--teal);}
+  .route-banner .node-tag.dest{color:var(--amber);}
+  .route-banner .arrow{color:var(--ink-soft);margin:0 6px;font-weight:500;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 8px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .walk-list{
+    list-style:none;
+    margin:0 0 4px;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    max-height:190px;
+    overflow-y:auto;
+  }
+  .walk-list li{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 10px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .walk-list li:hover{border-color:var(--amber);background:var(--amber-soft);}
+  .walk-list li .len-tag{color:var(--ink-soft);font-size:11px;white-space:nowrap;}
+  .walk-more{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+
+  .readout{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Caminos entre dos nodos</h1>
+  <p class="lede">Elige un nodo de origen y uno de destino: la app encuentra todos los caminos simples que los conectan (sin repetir ningún nodo) y muestra claramente de dónde a dónde va cada uno.</p>
+
+  <div class="toolbar">
+    <label class="switch-label">
+      <input type="checkbox" id="directedToggle">
+      <span class="switch"></span>
+      Red dirigida
+    </label>
+    <div class="stepper">
+      <button id="nMinus" aria-label="Quitar nodo">−</button>
+      <span class="n-value" id="nValue">5 nodos</span>
+      <button id="nPlus" aria-label="Añadir nodo">+</button>
+    </div>
+    <button class="reset" id="resetBtn">Reiniciar conexiones</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red</h2>
+      <p class="hint">Haz clic en un nodo y luego en otro para crear o quitar un enlace.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <defs>
+          <marker id="arrowheadP" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#5B6B8C"></path>
+          </marker>
+        </defs>
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Caminos</h2>
+      <p class="hint">Elige el origen y el destino.</p>
+
+      <div class="query-row">
+        <select id="originSelect"></select>
+        <span class="arrow-lbl">→</span>
+        <select id="destSelect"></select>
+        <button class="swap-btn" id="swapBtn" title="Intercambiar origen y destino">⇄</button>
+      </div>
+
+      <div class="route-banner" id="routeBanner">Camino de <span class="node-tag" id="routeFrom">A</span><span class="arrow">→</span><span class="node-tag dest" id="routeTo">E</span></div>
+
+      <div class="stats-row">
+        <div class="stat" id="statCount">
+          <div class="num" id="statCountNum">0</div>
+          <div class="lbl">Caminos encontrados</div>
+        </div>
+        <div class="stat" id="statShortest">
+          <div class="num" id="statShortestNum">—</div>
+          <div class="lbl">Longitud del más corto</div>
+        </div>
+      </div>
+
+      <ul class="walk-list" id="walkList"></ul>
+      <div class="walk-more" id="walkMore"></div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> un camino simple entre el origen y el destino es cualquier secuencia de enlaces que los une sin pasar dos veces por el mismo nodo. Puede haber ninguno, uno o varios, dependiendo de cómo esté construida la red. Pasa el cursor sobre un camino de la lista para verlo resaltado en la red. En una red <b>dirigida</b>, cada paso solo puede seguir el sentido de la flecha, así que los caminos de A a B pueden ser distintos — o no existir — aunque sí existan de B a A.
+  </div>
+</div>
+
+<script>
+let numNodes = 5;
+const N_MIN = 3, N_MAX = 8;
+const LIST_CAP = 15;
+const SEARCH_CAP = 2000; // hard safety cap on total enumeration
+let nodes = [];
+const cx = 240, cy = 210, r = 150;
+let positions = {};
+
+let edges = new Set(); // "A>B"
+let directed = false;
+let selected = null;
+let origin = 'A';
+let destination = 'E';
+let prevStats = {};
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const directedToggle = document.getElementById('directedToggle');
+const resetBtn = document.getElementById('resetBtn');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const originSelect = document.getElementById('originSelect');
+const destSelect = document.getElementById('destSelect');
+const swapBtn = document.getElementById('swapBtn');
+const routeFrom = document.getElementById('routeFrom');
+const routeTo = document.getElementById('routeTo');
+const walkList = document.getElementById('walkList');
+const walkMore = document.getElementById('walkMore');
+const readout = document.getElementById('readout');
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String.fromCharCode(65+i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+  origin = nodes[0];
+  destination = nodes[nodes.length-1];
+}
+
+function edgeKey(a,b){ return a+'>'+b; }
+
+function hasConnection(a,b){
+  if (edges.has(edgeKey(a,b))) return true;
+  if (!directed && edges.has(edgeKey(b,a))) return true;
+  return false;
+}
+
+function toggleEdge(a,b){
+  if (a === b) return;
+  if (directed){
+    const k = edgeKey(a,b);
+    if (edges.has(k)) edges.delete(k); else edges.add(k);
+  } else {
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,a);
+    if (edges.has(k1) || edges.has(k2)){
+      edges.delete(k1); edges.delete(k2);
+    } else {
+      edges.add(k1);
+    }
+  }
+}
+
+function neighbors(a){
+  return nodes.filter(m => m!==a && hasConnection(a,m));
+}
+
+function renderNodesFn(){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(nd => {
+    const p = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 26);
+    let cls = 'node-circle';
+    if (nd === origin) cls += ' origin';
+    else if (nd === destination) cls += ' destination';
+    else if (selected === nd) cls += ' selected';
+    c.setAttribute('class', cls);
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 30;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  const drawn = new Set();
+  edges.forEach(k => {
+    const [a,b] = k.split('>');
+    const undirectedKey = [a,b].sort().join('-');
+    if (!directed && drawn.has(undirectedKey)) return;
+    drawn.add(undirectedKey);
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    line.dataset.pair = [a,b].join(',');
+    if (directed) line.setAttribute('marker-end','url(#arrowheadP)');
+    edgesLayer.appendChild(line);
+  });
+}
+
+function highlightEdgePair(a,b,on){
+  document.querySelectorAll('.edge').forEach(edge => {
+    const [ea,eb] = edge.dataset.pair.split(',');
+    const match = directed ? (ea===a && eb===b) : ((ea===a&&eb===b)||(ea===b&&eb===a));
+    if (match) edge.classList.toggle('active', on);
+  });
+}
+
+// --- enumerate all simple paths (no repeated nodes) from start to target ---
+function findAllSimplePaths(start, target, hardCap){
+  const results = [];
+  const visited = new Set([start]);
+  function dfs(current, path){
+    if (results.length >= hardCap) return;
+    if (current === target){ results.push([...path]); return; }
+    for (const nb of neighbors(current)){
+      if (results.length >= hardCap) return;
+      if (!visited.has(nb)){
+        visited.add(nb);
+        path.push(nb);
+        dfs(nb, path);
+        path.pop();
+        visited.delete(nb);
+      }
+    }
+  }
+  dfs(start, [start]);
+  return results;
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function populateSelects(){
+  originSelect.innerHTML = nodes.map(nd => `<option value="${nd}" ${nd===origin?'selected':''}>${nd}</option>`).join('');
+  destSelect.innerHTML = nodes.map(nd => `<option value="${nd}" ${nd===destination?'selected':''}>${nd}</option>`).join('');
+}
+
+function renderQuery(){
+  routeFrom.textContent = origin;
+  routeTo.textContent = destination;
+
+  walkList.innerHTML = '';
+  walkMore.textContent = '';
+
+  if (origin === destination){
+    document.getElementById('statCountNum').textContent = '—';
+    document.getElementById('statShortestNum').textContent = '0';
+    readout.innerHTML = `El origen y el destino son el mismo nodo (<b>${origin}</b>).`;
+    return;
+  }
+
+  const paths = findAllSimplePaths(origin, destination, SEARCH_CAP);
+  const count = paths.length;
+  const truncated = count >= SEARCH_CAP;
+
+  document.getElementById('statCountNum').textContent = truncated ? `${count}+` : count;
+  const shortestLen = count ? Math.min(...paths.map(p => p.length-1)) : null;
+  document.getElementById('statShortestNum').textContent = shortestLen===null ? '—' : shortestLen;
+
+  flashStat(document.getElementById('statCount'), prevStats.count !== undefined && prevStats.count !== count);
+  prevStats.count = count;
+
+  if (count === 0){
+    readout.innerHTML = `No hay ningún camino de <b>${origin}</b> a <b>${destination}</b> en esta red${directed?' (revisa el sentido de los enlaces)':''}.`;
+    return;
+  }
+
+  readout.innerHTML = `Se encontraron <b>${truncated?count+'+':count}</b> camino${count===1?'':'s'} simple${count===1?'':'s'} de <b>${origin}</b> a <b>${destination}</b>.`;
+
+  const sorted = [...paths].sort((a,b) => a.length-b.length);
+  const shown = sorted.slice(0, LIST_CAP);
+  shown.forEach(w => {
+    const li = document.createElement('li');
+    const len = w.length-1;
+    li.innerHTML = `<span>${w.join(' → ')}</span><span class="len-tag">${len} enlace${len===1?'':'s'}</span>`;
+    li.dataset.walk = w.join(',');
+    walkList.appendChild(li);
+    li.addEventListener('mouseenter', () => {
+      for (let i=0;i<w.length-1;i++) highlightEdgePair(w[i], w[i+1], true);
+    });
+    li.addEventListener('mouseleave', () => {
+      for (let i=0;i<w.length-1;i++) highlightEdgePair(w[i], w[i+1], false);
+    });
+  });
+
+  if (count > shown.length){
+    walkMore.textContent = `Mostrando ${shown.length} de ${truncated?count+'+':count} caminos (ordenados del más corto al más largo).`;
+  }
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+  }
+  renderAll();
+}
+
+function updateNodeControls(){
+  nValue.textContent = `${numNodes} nodos`;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+}
+
+function renderAll(){
+  renderNodesFn();
+  renderEdges();
+  populateSelects();
+  renderQuery();
+  updateNodeControls();
+}
+
+directedToggle.addEventListener('change', (e) => {
+  directed = e.target.checked;
+  renderAll();
+});
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  renderAll();
+});
+
+originSelect.addEventListener('change', (e) => { origin = e.target.value; renderAll(); });
+destSelect.addEventListener('change', (e) => { destination = e.target.value; renderAll(); });
+swapBtn.addEventListener('click', () => {
+  const tmp = origin; origin = destination; destination = tmp;
+  renderAll();
+});
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
