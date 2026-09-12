@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distribución de grado — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .switch-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    background:var(--line);
+    border-radius:999px;
+    transition:background .2s ease;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:3px;left:3px;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 2px rgba(22,35,63,.25);
+    transition:transform .2s ease;
+  }
+  input[type=checkbox]{display:none;}
+  input[type=checkbox]:checked + .switch{background:var(--teal);}
+  input[type=checkbox]:checked + .switch::after{transform:translateX(20px);}
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:76px;
+    text-align:center;
+  }
+
+  button.reset{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle.deg-hl{stroke:var(--amber);stroke-width:3.5;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:stroke .15s ease, stroke-width .15s ease;
+    fill:none;
+  }
+  .edge:hover, .edge.active{stroke:var(--teal);stroke-width:4;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-bottom:18px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 10px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .hist{
+    display:flex;
+    align-items:flex-end;
+    gap:6px;
+    height:150px;
+    padding:0 2px 2px;
+    border-bottom:2px solid var(--line);
+  }
+  .hist-col{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    cursor:default;
+  }
+  .hist-count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    font-weight:600;
+    color:var(--ink);
+    margin-bottom:4px;
+    min-height:13px;
+  }
+  .hist-bar{
+    width:72%;
+    background:var(--teal);
+    border-radius:5px 5px 0 0;
+    transition:height .3s ease, background .15s ease;
+  }
+  .hist-col:hover .hist-bar{background:var(--amber);}
+  .hist-col.mode .hist-bar{background:var(--amber);}
+  .hist-labels{
+    display:flex;
+    gap:6px;
+    padding:6px 2px 0;
+  }
+  .hist-labels .hl{
+    flex:1;
+    min-width:0;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+  }
+  .hist-caption{
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:2px;
+  }
+
+  .readout{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Distribución de grado</h1>
+  <p class="lede">La distribución de grado P(k) muestra qué fracción de los nodos tiene cada valor de grado posible. Construye la red y observa cómo cambia la forma del histograma — y pasa el cursor sobre una barra para ver qué nodos tienen ese grado.</p>
+
+  <div class="toolbar">
+    <label class="switch-label">
+      <input type="checkbox" id="directedToggle">
+      <span class="switch"></span>
+      Red dirigida
+    </label>
+    <div class="stepper">
+      <button id="nMinus" aria-label="Quitar nodo">−</button>
+      <span class="n-value" id="nValue">7 nodos</span>
+      <button id="nPlus" aria-label="Añadir nodo">+</button>
+    </div>
+    <button class="reset" id="resetBtn">Reiniciar conexiones</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red</h2>
+      <p class="hint">Haz clic en un nodo y luego en otro para crear o quitar un enlace.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <defs>
+          <marker id="arrowheadD" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#5B6B8C"></path>
+          </marker>
+        </defs>
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Distribución de grado</h2>
+      <p class="hint">Cada barra cuenta cuántos nodos tienen ese grado exacto.</p>
+
+      <div class="stats-row">
+        <div class="stat" id="statN">
+          <div class="num" id="statNNum">7</div>
+          <div class="lbl">Nodos (N)</div>
+        </div>
+        <div class="stat" id="statMode">
+          <div class="num" id="statModeNum">—</div>
+          <div class="lbl">Grado más común</div>
+        </div>
+      </div>
+
+      <div class="hist" id="hist"></div>
+      <div class="hist-labels" id="histLabels"></div>
+      <div class="hist-caption">Grado (k)</div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> para cada valor posible de grado <code>k</code>, se cuenta cuántos nodos lo tienen; dividiendo ese conteo entre N se obtiene la probabilidad <code>P(k)</code> de que un nodo elegido al azar tenga grado k. Redes distintas producen formas distintas: una red donde todos los nodos tienen un grado parecido da una distribución angosta alrededor de un valor; una red con unos pocos nodos muy conectados y muchos poco conectados da una distribución con una cola larga hacia la derecha, típica de las redes libres de escala. En una red <b>dirigida</b>, aquí se usa el grado total (entrada + salida) de cada nodo.
+  </div>
+</div>
+
+<script>
+let numNodes = 7;
+const N_MIN = 3, N_MAX = 8;
+let nodes = [];
+const cx = 240, cy = 210, r = 150;
+let positions = {};
+
+let edges = new Set(); // "A>B"
+let directed = false;
+let selected = null;
+let prevStats = {};
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const directedToggle = document.getElementById('directedToggle');
+const resetBtn = document.getElementById('resetBtn');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const histEl = document.getElementById('hist');
+const histLabelsEl = document.getElementById('histLabels');
+const readout = document.getElementById('readout');
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String.fromCharCode(65+i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function edgeKey(a,b){ return a+'>'+b; }
+
+function hasConnection(a,b){
+  if (edges.has(edgeKey(a,b))) return true;
+  if (!directed && edges.has(edgeKey(b,a))) return true;
+  return false;
+}
+
+function toggleEdge(a,b){
+  if (a === b) return;
+  if (directed){
+    const k = edgeKey(a,b);
+    if (edges.has(k)) edges.delete(k); else edges.add(k);
+  } else {
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,a);
+    if (edges.has(k1) || edges.has(k2)){
+      edges.delete(k1); edges.delete(k2);
+    } else {
+      edges.add(k1);
+    }
+  }
+}
+
+function outDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && edges.has(edgeKey(nd,m))) d++; });
+  return d;
+}
+function inDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && edges.has(edgeKey(m,nd))) d++; });
+  return d;
+}
+function undirectedDegree(nd){
+  let d = 0;
+  nodes.forEach(m => { if (m!==nd && hasConnection(nd,m)) d++; });
+  return d;
+}
+function totalDegree(nd){
+  return directed ? (outDegree(nd)+inDegree(nd)) : undirectedDegree(nd);
+}
+
+function renderNodesFn(degrees){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(nd => {
+    const p = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', 26);
+    c.setAttribute('class', 'node-circle' + (selected === nd ? ' selected' : ''));
+    c.dataset.degree = degrees[nd];
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p.x); t.setAttribute('y', p.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 30;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  const drawn = new Set();
+  edges.forEach(k => {
+    const [a,b] = k.split('>');
+    const undirectedKey = [a,b].sort().join('-');
+    if (!directed && drawn.has(undirectedKey)) return;
+    drawn.add(undirectedKey);
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    if (directed) line.setAttribute('marker-end','url(#arrowheadD)');
+    edgesLayer.appendChild(line);
+  });
+}
+
+function fmt(v){
+  return (Math.round(v*100)/100).toString();
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function setDegreeHighlight(k, on){
+  document.querySelectorAll(`.node-circle[data-degree="${k}"]`).forEach(c => c.classList.toggle('deg-hl', on));
+}
+
+function renderAll(){
+  const degrees = {};
+  nodes.forEach(nd => degrees[nd] = totalDegree(nd));
+
+  const maxDegree = directed ? (numNodes-1)*2 : (numNodes-1);
+  const counts = Array.from({length:maxDegree+1}, () => 0);
+  nodes.forEach(nd => counts[degrees[nd]]++);
+  const maxCount = Math.max(...counts, 1);
+  const modeCount = Math.max(...counts);
+  const modeVals = counts.map((c,k)=>({c,k})).filter(o => o.c===modeCount && o.c>0).map(o=>o.k);
+
+  document.getElementById('statNNum').textContent = numNodes;
+  const modeText = modeVals.length ? modeVals.join(', ') : '—';
+  document.getElementById('statModeNum').textContent = modeText;
+  flashStat(document.getElementById('statMode'), prevStats.mode !== undefined && prevStats.mode !== modeText);
+  prevStats.mode = modeText;
+
+  let histHtml = '';
+  let labelsHtml = '';
+  counts.forEach((count, k) => {
+    const heightPct = Math.round((count/maxCount)*100);
+    const isMode = modeVals.includes(k) && count>0;
+    histHtml += `<div class="hist-col${isMode?' mode':''}" data-k="${k}">
+      <div class="hist-count">${count>0?count:''}</div>
+      <div class="hist-bar" style="height:${heightPct}%"></div>
+    </div>`;
+    labelsHtml += `<div class="hl">${k}</div>`;
+  });
+  histEl.innerHTML = histHtml;
+  histLabelsEl.innerHTML = labelsHtml;
+
+  histEl.querySelectorAll('.hist-col').forEach(col => {
+    const k = col.dataset.k;
+    col.addEventListener('mouseenter', () => setDegreeHighlight(k, true));
+    col.addEventListener('mouseleave', () => setDegreeHighlight(k, false));
+  });
+
+  renderNodesFn(degrees);
+  renderEdges();
+
+  if (edges.size === 0){
+    readout.innerHTML = 'Aún no hay enlaces. Crea conexiones en la red para ver la distribución.';
+  } else {
+    const parts = counts.map((c,k) => c>0 ? `P(${k}) = ${c}/${numNodes} = ${fmt(c/numNodes)}` : null).filter(Boolean);
+    readout.innerHTML = `<b>Grado más común: ${modeText}</b> (${modeCount} de ${numNodes} nodos).
+      <span class="eq">${parts.join('  ·  ')}</span>`;
+  }
+
+  updateNodeControls();
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+  }
+  renderAll();
+}
+
+function updateNodeControls(){
+  nValue.textContent = `${numNodes} nodos`;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+}
+
+directedToggle.addEventListener('change', (e) => {
+  directed = e.target.checked;
+  renderAll();
+});
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear();
+    selected = null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  renderAll();
+});
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
