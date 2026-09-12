@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red regular — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --red: #D6455B;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper .lbl{color:var(--ink-soft);font-size:13px;}
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:40px;
+    text-align:center;
+  }
+
+  button.reset, button.primary{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+    white-space:nowrap;
+  }
+  button.reset{
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+  button.primary{
+    color:#fff;
+    background:var(--teal);
+    border:1px solid var(--teal);
+  }
+  button.primary:hover{background:#0c8f8e;}
+  button.primary.secondary-btn{background:var(--ink);border-color:var(--ink);}
+  button.primary.secondary-btn:hover{background:#0e1830;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.selected{stroke:var(--teal);stroke-width:3;fill:var(--teal-soft);}
+  .node-circle.outlier{stroke:var(--red);stroke-width:3;fill:#FCE9EB;}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2;
+    fill:none;
+  }
+
+  .verdict{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:14px;
+  }
+  .verdict.ok{background:var(--teal-soft);color:var(--teal);}
+  .verdict.bad{background:#FCE9EB;color:var(--red);}
+  .verdict.empty{background:#F3F5FA;color:var(--ink-soft);}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 8px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .degree-list{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    margin-bottom:6px;
+    max-height:210px;
+    overflow-y:auto;
+  }
+  .degree-row{
+    display:grid;
+    grid-template-columns:26px 1fr 30px;
+    align-items:center;
+    gap:9px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+  .degree-row .node-tag{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    color:var(--ink);
+    font-size:12.5px;
+  }
+  .degree-row.outlier .node-tag{color:var(--red);}
+  .degree-bar-track{height:8px;border-radius:999px;background:#F0F2F8;overflow:hidden;}
+  .degree-bar-fill{height:100%;border-radius:999px;background:var(--ink-soft);transition:width .3s ease;}
+  .degree-row.outlier .degree-bar-fill{background:var(--red);}
+  .degree-row .deg-val{text-align:right;color:var(--ink);font-weight:600;}
+
+  .readout{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Red regular</h1>
+  <p class="lede">Una red es regular cuando todos sus nodos tienen exactamente el mismo grado. Genera un anillo regular o un grafo completo, y luego intenta romper la regularidad editando enlaces a mano — la app te dirá al instante si la red sigue siendo regular.</p>
+
+  <div class="toolbar">
+    <div class="stepper">
+      <span class="lbl">Nodos (N)</span>
+      <button id="nMinus">−</button>
+      <span class="n-value" id="nValue">8</span>
+      <button id="nPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Vecinos por lado (K)</span>
+      <button id="kMinus">−</button>
+      <span class="n-value" id="kValue">2</span>
+      <button id="kPlus">+</button>
+    </div>
+    <button class="primary" id="ringBtn">Generar anillo regular</button>
+    <button class="primary secondary-btn" id="completeBtn">Generar grafo completo</button>
+    <button class="reset" id="resetBtn">Reiniciar</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red</h2>
+      <p class="hint">Haz clic en un nodo y luego en otro para crear o quitar un enlace. Los nodos cuyo grado no coincide con la mayoría se resaltan en rojo.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>¿Es una red regular?</h2>
+      <p class="hint">Una red k-regular tiene el mismo grado k en todos sus nodos.</p>
+
+      <div class="verdict empty" id="verdict">Aún no hay enlaces.</div>
+
+      <div class="stats-row">
+        <div class="stat" id="statN">
+          <div class="num" id="statNNum">8</div>
+          <div class="lbl">Nodos (N)</div>
+        </div>
+        <div class="stat" id="statDeg">
+          <div class="num" id="statDegNum">—</div>
+          <div class="lbl">Grado común</div>
+        </div>
+      </div>
+
+      <div class="degree-list" id="degreeList"></div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> un grafo es <code>k</code>-regular si cada uno de sus nodos tiene exactamente <code>k</code> vecinos. El anillo regular de este demo conecta a cada nodo con sus <code>K</code> vecinos más cercanos a cada lado, dando un grado constante <code>2K</code> — el mismo tipo de red que usamos como punto de partida (β = 0) en el modelo de mundo pequeño. El grafo completo, donde todos los nodos se conectan entre sí, también es regular: cada nodo tiene grado <code>N−1</code>. Muchas redes reales están lejos de ser regulares (piensa en la distribución de grado con hubs que vimos antes) — la regularidad es más bien un caso especial e idealizado, útil como punto de comparación.
+  </div>
+</div>
+
+<script>
+let numNodes = 8;
+const N_MIN = 4, N_MAX = 16;
+let K = 2;
+
+let nodes = [];
+const cx = 240, cy = 210, r = 160;
+let positions = {};
+
+let edges = new Set(); // pairKey strings
+let selected = null;
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const kMinus = document.getElementById('kMinus');
+const kPlus = document.getElementById('kPlus');
+const kValue = document.getElementById('kValue');
+const ringBtn = document.getElementById('ringBtn');
+const completeBtn = document.getElementById('completeBtn');
+const resetBtn = document.getElementById('resetBtn');
+const verdictEl = document.getElementById('verdict');
+const degreeList = document.getElementById('degreeList');
+const readout = document.getElementById('readout');
+
+function maxK(){ return Math.floor(numNodes/2); }
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String(i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function pairKey(a,b){ return [Number(a),Number(b)].sort((x,y)=>x-y).join('-'); }
+function hasConnection(a,b){ return edges.has(pairKey(a,b)); }
+
+function toggleEdge(a,b){
+  if (a===b) return;
+  const k = pairKey(a,b);
+  if (edges.has(k)) edges.delete(k); else edges.add(k);
+}
+
+function neighbors(a){
+  return nodes.filter(m => m!==a && hasConnection(a,m));
+}
+function degree(a){ return neighbors(a).length; }
+
+function generateRing(){
+  edges.clear();
+  for (let i=0;i<numNodes;i++){
+    for (let d=1; d<=K; d++){
+      const j = (i+d) % numNodes;
+      edges.add(pairKey(nodes[i], nodes[j]));
+    }
+  }
+  selected = null;
+  renderAll();
+}
+
+function generateComplete(){
+  edges.clear();
+  for (let i=0;i<numNodes;i++){
+    for (let j=i+1;j<numNodes;j++){
+      edges.add(pairKey(nodes[i], nodes[j]));
+    }
+  }
+  selected = null;
+  renderAll();
+}
+
+function mode(arr){
+  const counts = {};
+  arr.forEach(v => counts[v] = (counts[v]||0)+1);
+  let best = arr[0], bestCount = 0;
+  Object.keys(counts).forEach(k => {
+    if (counts[k] > bestCount){ bestCount = counts[k]; best = Number(k); }
+  });
+  return best;
+}
+
+function renderNodesFn(degrees, commonDeg){
+  nodesLayer.innerHTML = '';
+  nodes.forEach(nd => {
+    const p2 = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p2.x); c.setAttribute('cy', p2.y); c.setAttribute('r', 20);
+    let cls = 'node-circle';
+    if (edges.size>0 && degrees[nd] !== commonDeg) cls += ' outlier';
+    else if (selected === nd) cls += ' selected';
+    c.setAttribute('class', cls);
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p2.x); t.setAttribute('y', p2.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 24;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  edges.forEach(key => {
+    const [a,b] = key.split('-');
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    edgesLayer.appendChild(line);
+  });
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+let prevStats = {};
+
+function updateControls(){
+  nValue.textContent = numNodes;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+  kValue.textContent = K;
+  kMinus.disabled = K<=1;
+  kPlus.disabled = K>=maxK();
+}
+
+function renderDegreeList(degrees, commonDeg){
+  let html = '';
+  nodes.forEach(nd => {
+    const d = degrees[nd];
+    const isOutlier = edges.size>0 && d !== commonDeg;
+    const maxPossible = numNodes-1;
+    html += `<div class="degree-row${isOutlier?' outlier':''}">
+      <span class="node-tag">${nd}</span>
+      <div class="degree-bar-track"><div class="degree-bar-fill" style="width:${maxPossible?Math.round(d/maxPossible*100):0}%"></div></div>
+      <span class="deg-val">${d}</span>
+    </div>`;
+  });
+  degreeList.innerHTML = html;
+}
+
+function renderAll(){
+  const degrees = {};
+  nodes.forEach(nd => degrees[nd] = degree(nd));
+  const degValues = nodes.map(nd => degrees[nd]);
+  const isRegular = edges.size>0 && degValues.every(d => d === degValues[0]);
+  const commonDeg = edges.size>0 ? mode(degValues) : null;
+
+  document.getElementById('statNNum').textContent = numNodes;
+  document.getElementById('statDegNum').textContent = commonDeg===null ? '—' : commonDeg;
+  flashStat(document.getElementById('statDeg'), prevStats.commonDeg !== undefined && prevStats.commonDeg !== commonDeg);
+  prevStats.commonDeg = commonDeg;
+
+  renderNodesFn(degrees, commonDeg);
+  renderEdges();
+  renderDegreeList(degrees, commonDeg);
+  updateControls();
+
+  if (edges.size === 0){
+    verdictEl.className = 'verdict empty';
+    verdictEl.textContent = 'Aún no hay enlaces.';
+    readout.innerHTML = 'Genera un anillo regular o un grafo completo, o crea enlaces a mano.';
+    return;
+  }
+
+  if (isRegular){
+    verdictEl.className = 'verdict ok';
+    verdictEl.textContent = `✓ Red regular — todos los nodos tienen grado ${commonDeg}`;
+    readout.innerHTML = `Con <b>N = ${numNodes}</b> nodos y grado constante <b>${commonDeg}</b>, cada nodo tiene exactamente el mismo número de conexiones.`;
+  } else {
+    const outliers = nodes.filter(nd => degrees[nd] !== commonDeg);
+    verdictEl.className = 'verdict bad';
+    verdictEl.textContent = `✗ Ya no es regular`;
+    readout.innerHTML = `La mayoría de los nodos tiene grado <b>${commonDeg}</b>, pero <b>${outliers.join(', ')}</b> ${outliers.length===1?'tiene':'tienen'} un grado distinto. Edita los enlaces para volver a igualar todos los grados.`;
+  }
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+  }
+  renderAll();
+}
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    if (K>maxK()) K = maxK();
+    edges.clear(); selected=null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear(); selected=null;
+    rebuildNodes();
+    renderAll();
+  }
+});
+kMinus.addEventListener('click', () => { if (K>1){ K--; updateControls(); }});
+kPlus.addEventListener('click', () => { if (K<maxK()){ K++; updateControls(); }});
+
+ringBtn.addEventListener('click', generateRing);
+completeBtn.addEventListener('click', generateComplete);
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  renderAll();
+});
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
