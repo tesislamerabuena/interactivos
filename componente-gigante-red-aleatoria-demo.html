@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Componente gigante en una red aleatoria — Demo interactivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #F5F7FB;
+    --card: #FFFFFF;
+    --ink: #16233F;
+    --ink-soft: #5B6B8C;
+    --line: #DDE4F0;
+    --teal: #0EA5A4;
+    --teal-soft: #E3F6F5;
+    --amber: #E8871E;
+    --amber-soft: #FCEEDD;
+    --radius: 16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    padding:40px 20px 60px;
+  }
+  .wrap{max-width:980px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:clamp(28px,4vw,40px);
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    color:var(--ink-soft);
+    font-size:16px;
+    line-height:1.6;
+    max-width:640px;
+    margin:0 0 32px;
+  }
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .switch-label{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    user-select:none;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    background:var(--line);
+    border-radius:999px;
+    transition:background .2s ease;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:"";
+    position:absolute;
+    top:3px;left:3px;
+    width:18px;height:18px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 2px rgba(22,35,63,.25);
+    transition:transform .2s ease;
+  }
+  input[type=checkbox]{display:none;}
+  input[type=checkbox]:checked + .switch{background:var(--teal);}
+  input[type=checkbox]:checked + .switch::after{transform:translateX(20px);}
+
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink);
+  }
+  .stepper .lbl{color:var(--ink-soft);font-size:13px;}
+  .stepper button{
+    width:28px;height:28px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .15s ease;
+    line-height:1;
+  }
+  .stepper button:hover:not(:disabled){border-color:var(--teal);color:var(--teal);}
+  .stepper button:disabled{opacity:.35;cursor:not-allowed;}
+  .stepper .n-value{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600;
+    font-size:14px;
+    min-width:44px;
+    text-align:center;
+  }
+
+  button.reset, button.primary{
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    font-weight:600;
+    border-radius:999px;
+    padding:8px 16px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  button.reset{
+    color:var(--ink-soft);
+    background:transparent;
+    border:1px solid var(--line);
+  }
+  button.reset:hover{border-color:var(--teal);color:var(--teal);}
+  button.primary{
+    color:#fff;
+    background:var(--teal);
+    border:1px solid var(--teal);
+  }
+  button.primary:hover{background:#0c8f8e;}
+
+  .stage{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:22px;
+  }
+  @media (max-width:760px){ .stage{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .card h2{
+    font-family:'Sora',sans-serif;
+    font-size:14px;
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 4px;
+  }
+  .card .hint{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  svg#graph{width:100%;height:auto;display:block;}
+  .node-circle{
+    fill:#fff;
+    stroke:var(--ink-soft);
+    stroke-width:2;
+    cursor:pointer;
+    transition:stroke .15s ease, fill .15s ease;
+  }
+  .node-circle.giant{stroke:var(--teal);stroke-width:3;fill:var(--teal-soft);}
+  .node-circle.selected{stroke:var(--amber);stroke-width:3;fill:var(--amber-soft);}
+  .node-circle.comp-hl{stroke:var(--amber);stroke-width:3.5;fill:var(--amber-soft);}
+  .node-circle:hover{stroke:var(--teal);}
+  .node-label{
+    font-family:'Sora',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    fill:var(--ink);
+    pointer-events:none;
+    text-anchor:middle;
+    dominant-baseline:middle;
+  }
+  .edge{
+    stroke:var(--ink-soft);
+    stroke-width:2.5;
+    cursor:pointer;
+    transition:stroke .15s ease, stroke-width .15s ease;
+    fill:none;
+  }
+  .edge:hover, .edge.active{stroke:var(--teal);stroke-width:4;}
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 8px;
+    text-align:center;
+    transition:background .3s ease;
+  }
+  .stat.flash{animation:statFlash 900ms ease-out;}
+  @keyframes statFlash{
+    0%{background-color:#FFE066;}
+    100%{background-color:transparent;}
+  }
+  .stat .num{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--ink);
+    line-height:1.1;
+  }
+  .stat .lbl{
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    line-height:1.3;
+  }
+
+  .link-track{
+    position:relative;
+    height:14px;
+    border-radius:999px;
+    background:#F0F2F8;
+    border:1px solid var(--line);
+    margin:10px 0 6px;
+  }
+  .link-fill{
+    height:100%;
+    background:var(--teal);
+    border-radius:999px;
+    transition:width .35s ease;
+  }
+  .expected-marker{
+    position:absolute;
+    top:-4px;bottom:-4px;
+    width:3px;
+    background:var(--amber);
+    border-radius:2px;
+    transition:left .35s ease;
+  }
+  .expected-label{
+    font-size:11px;
+    color:var(--amber);
+    font-weight:600;
+    text-align:right;
+    margin-bottom:14px;
+  }
+
+  .comp-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:16px;
+  }
+  .comp-list .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px 10px;
+    cursor:default;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .comp-list .chip:hover{border-color:var(--amber);background:var(--amber-soft);}
+  .comp-list .chip.giant{background:var(--teal-soft);color:var(--teal);border-color:var(--teal);}
+
+  .history-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:8px;
+  }
+  .history-row .chip{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:#FAFBFE;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:3px 9px;
+  }
+  .history-row .chip.current{background:var(--teal-soft);color:var(--teal);border-color:var(--teal);}
+  .history-empty{font-size:12.5px;color:var(--ink-soft);}
+
+  .readout{
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.6;
+  }
+  .readout b{color:var(--ink);font-weight:600;}
+  .readout .eq{
+    display:block;
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink);
+  }
+
+  .explain{
+    margin-top:22px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink-soft);
+  }
+  .explain b{color:var(--ink);}
+  .explain code{
+    font-family:'JetBrains Mono',monospace;
+    background:var(--teal-soft);
+    color:var(--teal);
+    padding:1px 6px;
+    border-radius:4px;
+    font-size:12.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Redes complejas · Concepto único</div>
+  <h1>Componente gigante en una red aleatoria</h1>
+  <p class="lede">Cuando el grado promedio ⟨k⟩ de una red aleatoria supera 1, casi todos los nodos suelen quedar conectados en una sola componente enorme — la "componente gigante". Genera redes con distinta N y p, y observa cuándo aparece.</p>
+
+  <div class="toolbar">
+    <label class="switch-label">
+      <input type="checkbox" id="directedToggle">
+      <span class="switch"></span>
+      Red dirigida
+    </label>
+    <div class="stepper">
+      <span class="lbl">Nodos (N)</span>
+      <button id="nMinus">−</button>
+      <span class="n-value" id="nValue">8</span>
+      <button id="nPlus">+</button>
+    </div>
+    <div class="stepper">
+      <span class="lbl">Probabilidad (p)</span>
+      <button id="pMinus">−</button>
+      <span class="n-value" id="pValue">0.20</span>
+      <button id="pPlus">+</button>
+    </div>
+    <button class="primary" id="generateBtn">Generar red aleatoria</button>
+    <button class="reset" id="resetBtn">Reiniciar</button>
+  </div>
+
+  <div class="stage">
+    <div class="card">
+      <h2>Red</h2>
+      <p class="hint">Los nodos de la componente gigante se resaltan en teal. Genera al azar o edita los enlaces a mano.</p>
+      <svg id="graph" viewBox="0 0 480 440">
+        <defs>
+          <marker id="arrowheadG2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#5B6B8C"></path>
+          </marker>
+        </defs>
+        <g id="edgesLayer"></g>
+        <g id="nodesLayer"></g>
+      </svg>
+    </div>
+
+    <div class="card">
+      <h2>Componente gigante</h2>
+      <p class="hint">S real (teal) comparado contra la fracción esperada (ámbar) para esta N y p.</p>
+
+      <div class="stats-row">
+        <div class="stat" id="statSize">
+          <div class="num" id="statSizeNum">0</div>
+          <div class="lbl">Tamaño real (nodos)</div>
+        </div>
+        <div class="stat" id="statFrac">
+          <div class="num" id="statFracNum">0%</div>
+          <div class="lbl">Fracción real (S)</div>
+        </div>
+        <div class="stat" id="statExpected">
+          <div class="num" id="statExpectedNum">—</div>
+          <div class="lbl">Fracción esperada</div>
+        </div>
+      </div>
+
+      <div class="link-track">
+        <div class="link-fill" id="linkFill"></div>
+        <div class="expected-marker" id="expectedMarker"></div>
+      </div>
+      <div class="expected-label" id="expectedLabel">esperado: —</div>
+
+      <p class="hint" style="margin-bottom:6px;">Componentes actuales (tamaño de cada una; pasa el cursor para verla en la red):</p>
+      <div class="comp-list" id="compList"></div>
+
+      <p class="hint" style="margin-bottom:6px;">Historial de generaciones (S real de cada intento):</p>
+      <div class="history-row" id="historyRow"><span class="history-empty">Aún no has generado ninguna red aleatoria.</span></div>
+
+      <div class="readout" id="readout"></div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <b>Cómo leerlo:</b> las componentes se calculan tratando la red como no dirigida (dos nodos están en la misma componente si hay un camino entre ellos, sin importar el sentido de los enlaces). El grado promedio esperado es <code>⟨k⟩ = p(N−1)</code>. Cuando <code>⟨k⟩ &gt; 1</code>, la teoría de Erdős–Rényi predice que aparece una componente gigante cuya fracción S del total de nodos resuelve la ecuación <code>S = 1 − e^(−⟨k⟩S)</code> — cuando <code>⟨k⟩ ≤ 1</code>, la única solución estable es S = 0: la red se queda fragmentada en piezas pequeñas. Con la N tan chica de este demo, la transición real es más gradual y ruidosa que en la teoría, pensada para N muy grande.
+  </div>
+</div>
+
+<script>
+let numNodes = 8;
+const N_MIN = 3, N_MAX = 8;
+let p = 0.20;
+const P_MIN = 0, P_MAX = 1, P_STEP = 0.05;
+const HISTORY_CAP = 12;
+
+let nodes = [];
+const cx = 240, cy = 210, r = 150;
+let positions = {};
+
+let edges = new Set(); // "A>B"
+let directed = false;
+let selected = null;
+let history = [];
+let prevStats = {};
+
+const edgesLayer = document.getElementById('edgesLayer');
+const nodesLayer = document.getElementById('nodesLayer');
+const directedToggle = document.getElementById('directedToggle');
+const resetBtn = document.getElementById('resetBtn');
+const generateBtn = document.getElementById('generateBtn');
+const nMinus = document.getElementById('nMinus');
+const nPlus = document.getElementById('nPlus');
+const nValue = document.getElementById('nValue');
+const pMinus = document.getElementById('pMinus');
+const pPlus = document.getElementById('pPlus');
+const pValue = document.getElementById('pValue');
+const linkFill = document.getElementById('linkFill');
+const expectedMarker = document.getElementById('expectedMarker');
+const expectedLabel = document.getElementById('expectedLabel');
+const compList = document.getElementById('compList');
+const historyRow = document.getElementById('historyRow');
+const readout = document.getElementById('readout');
+
+function rebuildNodes(){
+  nodes = Array.from({length:numNodes}, (_,i) => String.fromCharCode(65+i));
+  positions = {};
+  nodes.forEach((nd,i) => {
+    const angle = -Math.PI/2 + i * (2*Math.PI/nodes.length);
+    positions[nd] = { x: cx + r*Math.cos(angle), y: cy + r*Math.sin(angle) };
+  });
+}
+
+function edgeKey(a,b){ return a+'>'+b; }
+
+function hasConnection(a,b){
+  if (edges.has(edgeKey(a,b))) return true;
+  if (!directed && edges.has(edgeKey(b,a))) return true;
+  return false;
+}
+
+function weaklyConnected(a,b){
+  return edges.has(edgeKey(a,b)) || edges.has(edgeKey(b,a));
+}
+
+function toggleEdge(a,b){
+  if (a === b) return;
+  if (directed){
+    const k = edgeKey(a,b);
+    if (edges.has(k)) edges.delete(k); else edges.add(k);
+  } else {
+    const k1 = edgeKey(a,b), k2 = edgeKey(b,a);
+    if (edges.has(k1) || edges.has(k2)){
+      edges.delete(k1); edges.delete(k2);
+    } else {
+      edges.add(k1);
+    }
+  }
+}
+
+function findComponents(){
+  const visited = new Set();
+  const components = [];
+  nodes.forEach(start => {
+    if (visited.has(start)) return;
+    const compNodes = [];
+    const queue = [start];
+    visited.add(start);
+    while (queue.length){
+      const cur = queue.shift();
+      compNodes.push(cur);
+      nodes.forEach(m => {
+        if (m!==cur && !visited.has(m) && weaklyConnected(cur,m)){
+          visited.add(m);
+          queue.push(m);
+        }
+      });
+    }
+    components.push(compNodes);
+  });
+  return components.sort((a,b) => b.length-a.length);
+}
+
+function solveGiantFraction(k){
+  if (k <= 1) return 0;
+  let S = 0.9;
+  for (let i=0;i<200;i++){
+    S = 1 - Math.exp(-k*S);
+  }
+  return S;
+}
+
+function generateRandom(){
+  edges.clear();
+  if (directed){
+    for (let i=0;i<nodes.length;i++){
+      for (let j=0;j<nodes.length;j++){
+        if (i===j) continue;
+        if (Math.random() < p) edges.add(edgeKey(nodes[i], nodes[j]));
+      }
+    }
+  } else {
+    for (let i=0;i<nodes.length;i++){
+      for (let j=i+1;j<nodes.length;j++){
+        if (Math.random() < p) edges.add(edgeKey(nodes[i], nodes[j]));
+      }
+    }
+  }
+  const components = findComponents();
+  const S = components.length ? components[0].length/numNodes : 0;
+  history.push(S);
+  if (history.length > HISTORY_CAP) history.shift();
+  renderAll();
+}
+
+let currentComponents = [];
+
+function renderNodesFn(){
+  nodesLayer.innerHTML = '';
+  const giant = currentComponents.length ? currentComponents[0] : [];
+  nodes.forEach(nd => {
+    const p2 = positions[nd];
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx', p2.x); c.setAttribute('cy', p2.y); c.setAttribute('r', 24);
+    let cls = 'node-circle';
+    if (giant.includes(nd) && giant.length>1) cls += ' giant';
+    if (selected === nd) cls += ' selected';
+    c.setAttribute('class', cls);
+    c.dataset.node = nd;
+    c.addEventListener('click', () => onNodeClick(nd));
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', p2.x); t.setAttribute('y', p2.y);
+    t.setAttribute('class','node-label');
+    t.textContent = nd;
+    t.style.pointerEvents = 'none';
+    g.appendChild(c); g.appendChild(t);
+    nodesLayer.appendChild(g);
+  });
+}
+
+function edgePath(a,b){
+  const p1 = positions[a], p2 = positions[b];
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  const ux = dx/len, uy = dy/len;
+  const pad = 28;
+  const x1 = p1.x + ux*pad, y1 = p1.y + uy*pad;
+  const x2 = p2.x - ux*pad, y2 = p2.y - uy*pad;
+  return {x1,y1,x2,y2};
+}
+
+function renderEdges(){
+  edgesLayer.innerHTML = '';
+  const drawn = new Set();
+  edges.forEach(k => {
+    const [a,b] = k.split('>');
+    const undirectedKey = [a,b].sort().join('-');
+    if (!directed && drawn.has(undirectedKey)) return;
+    drawn.add(undirectedKey);
+    const {x1,y1,x2,y2} = edgePath(a,b);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class','edge');
+    if (directed) line.setAttribute('marker-end','url(#arrowheadG2)');
+    edgesLayer.appendChild(line);
+  });
+}
+
+function setComponentHighlight(compNodes, on){
+  compNodes.forEach(nd => {
+    document.querySelectorAll(`.node-circle[data-node="${nd}"]`).forEach(c => c.classList.toggle('comp-hl', on));
+  });
+}
+
+function fmt(v){
+  if (v===null || v===undefined || Number.isNaN(v)) return '—';
+  return (Math.round(v*100)/100).toString();
+}
+function fmtPct(v){
+  return Math.round(v*100)+'%';
+}
+
+function flashStat(el, changed){
+  if (changed){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+}
+
+function updateNControls(){
+  nValue.textContent = numNodes;
+  nMinus.disabled = numNodes<=N_MIN;
+  nPlus.disabled = numNodes>=N_MAX;
+}
+function updatePControls(){
+  pValue.textContent = fmt(p);
+  pMinus.disabled = p<=P_MIN+1e-9;
+  pPlus.disabled = p>=P_MAX-1e-9;
+}
+
+function renderHistory(){
+  if (history.length===0){
+    historyRow.innerHTML = '<span class="history-empty">Aún no has generado ninguna red aleatoria.</span>';
+    return;
+  }
+  historyRow.innerHTML = history.map((v,i) => `<span class="chip${i===history.length-1?' current':''}">${fmtPct(v)}</span>`).join('');
+}
+
+function renderCompList(components){
+  if (components.length===0 || (components.length===1 && components[0].length<=1 && edges.size===0)){
+    compList.innerHTML = '<span class="history-empty">Aún no hay enlaces.</span>';
+    return;
+  }
+  compList.innerHTML = components.map((comp,i) => {
+    const isGiant = i===0 && comp.length>1;
+    return `<span class="chip${isGiant?' giant':''}" data-idx="${i}">${comp.length}</span>`;
+  }).join('');
+  compList.querySelectorAll('.chip').forEach(chip => {
+    const idx = parseInt(chip.dataset.idx);
+    const comp = components[idx];
+    chip.addEventListener('mouseenter', () => setComponentHighlight(comp, true));
+    chip.addEventListener('mouseleave', () => setComponentHighlight(comp, false));
+  });
+}
+
+function renderAll(){
+  currentComponents = findComponents();
+  const giantSize = currentComponents.length ? currentComponents[0].length : 0;
+  const S = numNodes>0 ? giantSize/numNodes : 0;
+  const k = p*(numNodes-1);
+  const expected = solveGiantFraction(k);
+
+  document.getElementById('statSizeNum').textContent = giantSize;
+  document.getElementById('statFracNum').textContent = fmtPct(S);
+  document.getElementById('statExpectedNum').textContent = k>1 ? fmtPct(expected) : '—';
+
+  flashStat(document.getElementById('statFrac'), prevStats.S !== undefined && prevStats.S !== S);
+  prevStats.S = S;
+
+  linkFill.style.width = fmtPct(S);
+  if (k > 1){
+    expectedMarker.style.left = fmtPct(expected);
+    expectedMarker.style.display = 'block';
+    expectedLabel.textContent = `esperado: ${fmtPct(expected)}`;
+  } else {
+    expectedMarker.style.display = 'none';
+    expectedLabel.textContent = `⟨k⟩ = ${fmt(k)} ≤ 1: no se espera componente gigante`;
+  }
+
+  renderNodesFn();
+  renderEdges();
+  renderCompList(currentComponents);
+  renderHistory();
+  updateNControls();
+  updatePControls();
+
+  const avgHistory = history.length ? history.reduce((a,b)=>a+b,0)/history.length : null;
+
+  if (edges.size === 0 && history.length===0){
+    readout.innerHTML = 'Genera una red aleatoria, o construye una a mano haciendo clic en los nodos.';
+  } else {
+    let msg = `<b>Componente más grande: ${giantSize} de ${numNodes} nodos (${fmtPct(S)})</b>.`;
+    if (k > 1){
+      msg += `<span class="eq">⟨k⟩ = p(N−1) = ${fmt(p)}×${numNodes-1} = ${fmt(k)}  →  S esperado ≈ ${fmtPct(expected)} (resolviendo S = 1−e^(−⟨k⟩S))</span>`;
+    } else {
+      msg += `<span class="eq">⟨k⟩ = ${fmt(k)} ≤ 1  →  no se espera una componente gigante todavía</span>`;
+    }
+    if (avgHistory !== null){
+      msg += `<span class="eq">Promedio de tus ${history.length} generaciones: ${fmtPct(avgHistory)}</span>`;
+    }
+    readout.innerHTML = msg;
+  }
+}
+
+function onNodeClick(nd){
+  if (selected === null){
+    selected = nd;
+  } else if (selected === nd){
+    selected = null;
+  } else {
+    toggleEdge(selected, nd);
+    selected = null;
+  }
+  renderAll();
+}
+
+directedToggle.addEventListener('change', (e) => {
+  directed = e.target.checked;
+  history = [];
+  renderAll();
+});
+
+nMinus.addEventListener('click', () => {
+  if (numNodes>N_MIN){
+    numNodes--;
+    edges.clear();
+    selected = null;
+    history = [];
+    rebuildNodes();
+    renderAll();
+  }
+});
+nPlus.addEventListener('click', () => {
+  if (numNodes<N_MAX){
+    numNodes++;
+    edges.clear();
+    selected = null;
+    history = [];
+    rebuildNodes();
+    renderAll();
+  }
+});
+
+pMinus.addEventListener('click', () => {
+  p = Math.max(P_MIN, Math.round((p-P_STEP)*100)/100);
+  renderAll();
+});
+pPlus.addEventListener('click', () => {
+  p = Math.min(P_MAX, Math.round((p+P_STEP)*100)/100);
+  renderAll();
+});
+
+generateBtn.addEventListener('click', generateRandom);
+
+resetBtn.addEventListener('click', () => {
+  edges.clear();
+  selected = null;
+  history = [];
+  renderAll();
+});
+
+rebuildNodes();
+renderAll();
+</script>
+</body>
+</html>
